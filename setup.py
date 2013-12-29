@@ -1,17 +1,17 @@
 import os
 from setuptools import setup
 
-# allow setup.py to be run from any path
-os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
-
 # Set external files
 README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
 
+# allow setup.py to be run from any path
+os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+
 setup(
     name='soundscrape',
-    version='0.1.0',
+    version='0.1.2',
     packages=['soundscrape'],
     install_requires=required,
     include_package_data=True,
