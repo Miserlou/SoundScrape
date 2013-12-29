@@ -17,7 +17,7 @@ pip install soundscrape
 Then, just call soundscrape and the name of the artist you want to scrape:
 
 ```bash
-soundscrape kaiwaichi
+soundscrape rabbit-i-am
 ```
 
 And you're done! Hooray!
