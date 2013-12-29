@@ -1,0 +1,6 @@
+fudge==1.0.3
+mutagen==1.22
+requests==2.1.0
+simplejson==3.3.1
+soundcloud==0.4.1
+wsgiref==0.1.2
