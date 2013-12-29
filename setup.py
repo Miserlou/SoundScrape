@@ -11,7 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='soundscrape',
-    version='0.1.2',
+    version='0.1.4',
     packages=['soundscrape'],
     install_requires=required,
     include_package_data=True,
@@ -27,6 +27,7 @@ setup(
         ]
     },
     classifiers=[
+        'Environment :: Console',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',

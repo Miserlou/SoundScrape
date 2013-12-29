@@ -3,7 +3,7 @@
 SoundScrape
 ==============
 
-**SoundScrape** makes it super easy to download artists from SoundCloud. Automatically creates ID3 tags as well!
+**SoundScrape** makes it super easy to download artists from SoundCloud. It even automatically creates ID3 tags as well, which is handy.
 
 Usage
 ---------
