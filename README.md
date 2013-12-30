@@ -20,7 +20,7 @@ Then, just call soundscrape and the name of the artist you want to scrape:
 soundscrape rabbit-i-am
 ```
 
-And you're done! Hooray!
+And you're done! Hooray! Files are stored as mp3s in the format '''Artist name - Track title.mp3'''.
 
 Issues
 -------
