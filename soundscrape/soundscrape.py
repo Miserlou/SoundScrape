@@ -26,18 +26,13 @@ def main():
     if 'soundcloud' not in artist_url.lower():
         artist_url = 'https://soundcloud.com/' + artist_url.lower()
 
-    try:
-        client = soundcloud.Client(client_id=CLIENT_ID)
-        artist = client.get('/resolve', url=artist_url)
-        artist_username = artist.username
-        artist_id = artist.id
+    client = soundcloud.Client(client_id=CLIENT_ID)
+    artist = client.get('/resolve', url=artist_url)
+    artist_username = artist.username
+    artist_id = artist.id
 
-        tracks = client.get('/users/' + str(artist_id) + '/tracks')
-    except Exception, e:
-        print e
-        import pdb
-        pdb.set_trace()
-
+    tracks = client.get('/users/' + str(artist_id) + '/tracks')
+    
     for track in tracks:
 
         print u"Downloading: " + track.title
@@ -53,8 +48,6 @@ def main():
                     genre=track.genre)
         except Exception, e:
             print "Problem downloading " + track.title
-            import pdb
-            pdb.set_trace()
             print e
 
 def download_file(url, path):
