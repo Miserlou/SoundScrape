@@ -16,6 +16,8 @@ def main():
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                    help='An artist\'s SoundCloud username or URL')
+    parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxint,
+                        help='The number of tracks to download')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -32,14 +34,14 @@ def main():
     artist_id = artist.id
 
     tracks = client.get('/users/' + str(artist_id) + '/tracks')
-    
-    for track in tracks:
+    num_tracks = vargs['num_tracks']
 
-        print u"Downloading: " + track.title
+    for i, track in enumerate(tracks):
+        if i > num_tracks - 1:
+            continue
         try:
             stream_url = client.get(track.stream_url, allow_redirects=False)
             track_filename = artist_username + ' - ' + track.title.replace('/', '-') + '.mp3'
-
             download_file(stream_url.location, track_filename)
             tag_file(track_filename, 
                     artist=artist_username, 
@@ -57,11 +59,9 @@ def download_file(url, path):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
-
     return path
 
 def tag_file(filename, artist, title, year, genre):
-
     try:
         audio = EasyMP3(filename)
         audio["artist"] = artist
