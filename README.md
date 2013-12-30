@@ -1,4 +1,4 @@
-![SoundScrape!](http://i.imgur.com/fEFQqlK.png)
+![SoundScrape!](http://i.imgur.com/nHAt2ow.png)
 
 SoundScrape
 ==============
