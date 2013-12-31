@@ -29,27 +29,34 @@ def main():
         artist_url = 'https://soundcloud.com/' + artist_url.lower()
 
     client = soundcloud.Client(client_id=CLIENT_ID)
-    artist = client.get('/resolve', url=artist_url)
-    artist_username = artist.username
-    artist_id = artist.id
+    resolved = client.get('/resolve', url=artist_url)
 
-    tracks = client.get('/users/' + str(artist_id) + '/tracks')
+    if resolved.kind == 'artist':
+        artist = resolved
+        artist_id = artist.id
+        tracks = client.get('/users/' + str(artist_id) + '/tracks')
+    elif resolved.kind == 'playlist':
+        tracks = resolved.tracks
+
     num_tracks = vargs['num_tracks']
+    download_tracks(client, tracks, num_tracks)
 
+def download_tracks(client, tracks, num_tracks=sys.maxint):
     for i, track in enumerate(tracks):
         if i > num_tracks - 1:
             continue
         try:
-            stream_url = client.get(track.stream_url, allow_redirects=False)
-            track_filename = artist_username + ' - ' + track.title.replace('/', '-') + '.mp3'
+            print u"Downloading: " + track['title']
+            stream_url = client.get(track['stream_url'], allow_redirects=False)
+            track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
             download_file(stream_url.location, track_filename)
             tag_file(track_filename, 
-                    artist=artist_username, 
-                    title=track.title, 
-                    year=track.release_year, 
-                    genre=track.genre)
+                    artist=track['user']['username'], 
+                    title=track['title'], 
+                    year=track['release_year'], 
+                    genre=track['genre'])
         except Exception, e:
-            print "Problem downloading " + track.title
+            print u"Problem downloading " + track['title']
             print e
 
 def download_file(url, path):

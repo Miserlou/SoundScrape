@@ -22,6 +22,21 @@ soundscrape rabbit-i-am
 
 And you're done! Hooray! Files are stored as mp3s in the format **Artist name - Track title.mp3**.
 
+You can also use the *-n* argument to only download a certain number of songs.
+
+```bash
+soundscrape rabbit-i-am -n 3
+```
+
+Sets
+-------
+
+Soundscrape can also download sets, but you have to include the full URL of the set you want to download:
+
+```bash
+soundscrape https://soundcloud.com/vsauce-awesome/sets/awesome
+```
+
 Issues
 -------
 
