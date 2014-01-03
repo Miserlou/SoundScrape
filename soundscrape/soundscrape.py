@@ -37,24 +37,47 @@ def main():
         tracks = client.get('/users/' + str(artist_id) + '/tracks')
     elif resolved.kind == 'playlist':
         tracks = resolved.tracks
+    else:
+        artist = resolved
+        artist_id = artist.id
+        tracks = client.get('/users/' + str(artist_id) + '/tracks')
 
     num_tracks = vargs['num_tracks']
     download_tracks(client, tracks, num_tracks)
 
 def download_tracks(client, tracks, num_tracks=sys.maxint):
+
     for i, track in enumerate(tracks):
+
+        # "Track" and "Resource" objects are actually different, 
+        # even though they're the same. 
+        if isinstance(track, soundcloud.resource.Resource):
+            t_track = {}
+            t_track['downloadable'] = track.downloadable
+            t_track['title'] = track.title
+            t_track['user'] = {'username': track.user['username']}
+            t_track['release_year'] = track.release
+            t_track['genre'] = track.genre
+            t_track['stream_url'] = track.stream_url
+            track = t_track
+
         if i > num_tracks - 1:
             continue
         try:
-            print u"Downloading: " + track['title']
-            stream_url = client.get(track['stream_url'], allow_redirects=False)
-            track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
-            download_file(stream_url.location, track_filename)
-            tag_file(track_filename, 
-                    artist=track['user']['username'], 
-                    title=track['title'], 
-                    year=track['release_year'], 
-                    genre=track['genre'])
+
+            if not track.get('stream_url', False):
+                print track['title'] + u' is not downloadable.'
+                continue
+            else:
+                print u"Downloading: " + track['title']
+                stream_url = client.get(track['stream_url'], allow_redirects=False)
+                track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
+                download_file(stream_url.location, track_filename)
+                tag_file(track_filename, 
+                        artist=track['user']['username'], 
+                        title=track['title'], 
+                        year=track['release_year'], 
+                        genre=track['genre'])
         except Exception, e:
             print u"Problem downloading " + track['title']
             print e

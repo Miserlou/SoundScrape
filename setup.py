@@ -11,7 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='soundscrape',
-    version='0.4.0',
+    version='0.5.0',
     packages=['soundscrape'],
     install_requires=required,
     include_package_data=True,
