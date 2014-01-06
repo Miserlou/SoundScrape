@@ -62,7 +62,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                 t_track['user'] = {'username': track.user['username']}
                 t_track['release_year'] = track.release
                 t_track['genre'] = track.genre
-                if track.downloadable and not track.streamable:
+                if track.downloadable:
                     t_track['stream_url'] = track.download_url
                 else:
                     t_track['stream_url'] = track.stream_url
@@ -96,7 +96,6 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8') )
             print e
-
 
 def download_file(url, path):
     r = requests.get(url, stream=True)
