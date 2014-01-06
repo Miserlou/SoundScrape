@@ -8,11 +8,14 @@ import argparse
 from mutagen.easyid3 import ID3, EasyID3 
 from mutagen.mp3 import EasyMP3
 
+from clint.textui import colored, puts, progress
+
 # Please be nice with this!
 CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 
 def main():
+
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                    help='An artist\'s SoundCloud username or URL')
@@ -64,12 +67,11 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
         if i > num_tracks - 1:
             continue
         try:
-
             if not track.get('stream_url', False):
-                print track['title'] + u' is not downloadable.'
+                puts(track['title'] + colored.red(u' is not downloadable') + '.')
                 continue
             else:
-                print u"Downloading: " + track['title']
+                puts(colored.green(u"Downloading") + ": " + track['title'])
                 stream_url = client.get(track['stream_url'], allow_redirects=False)
                 track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
                 download_file(stream_url.location, track_filename)
@@ -79,16 +81,23 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                         year=track['release_year'], 
                         genre=track['genre'])
         except Exception, e:
-            print u"Problem downloading " + track['title']
+            puts(colored.red(u"Problem downloading ") + track['title'])
             print e
 
 def download_file(url, path):
     r = requests.get(url, stream=True)
     with open(path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024): 
+        total_length = int(r.headers.get('content-length'))
+        dl = 0
+        for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1): 
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
+                
+                # done = int(50 * dl / total_length)
+                # sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )    
+                # sys.stdout.flush()
+
     return path
 
 def tag_file(filename, artist, title, year, genre):
