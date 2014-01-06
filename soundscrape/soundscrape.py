@@ -57,11 +57,15 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
             try:
                 t_track = {}
                 t_track['downloadable'] = track.downloadable
+                t_track['streamable'] = track.streamable
                 t_track['title'] = track.title
                 t_track['user'] = {'username': track.user['username']}
                 t_track['release_year'] = track.release
                 t_track['genre'] = track.genre
-                t_track['stream_url'] = track.stream_url
+                if track.downloadable and not track.streamable:
+                    t_track['stream_url'] = track.download_url
+                else:
+                    t_track['stream_url'] = track.stream_url
                 track = t_track
             except Exception, e:
                 puts(track.title.encode('utf-8') + colored.red(u' is not downloadable') + '.')
@@ -71,21 +75,28 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
             continue
         try:
             if not track.get('stream_url', False):
-                puts(track['title'] + colored.red(u' is not downloadable') + '.')
+                puts(track['title'].encode('utf-8')  + colored.red(u' is not downloadable') + '.')
                 continue
             else:
-                puts(colored.green(u"Downloading") + ": " + track['title'])
-                stream_url = client.get(track['stream_url'], allow_redirects=False)
+                puts(colored.green(u"Downloading") + ": " + track['title'].encode('utf-8'))
+                stream = client.get(track['stream_url'], allow_redirects=False)
                 track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
-                download_file(stream_url.location, track_filename)
+                
+                if hasattr(stream, 'location'):
+                    location = stream.location
+                else:
+                    location = stream.url
+
+                download_file(location, track_filename)
                 tag_file(track_filename, 
                         artist=track['user']['username'], 
                         title=track['title'], 
                         year=track['release_year'], 
                         genre=track['genre'])
         except Exception, e:
-            puts(colored.red(u"Problem downloading ") + track['title'])
+            puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8') )
             print e
+
 
 def download_file(url, path):
     r = requests.get(url, stream=True)
