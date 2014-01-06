@@ -15,7 +15,6 @@ CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 
 def main():
-
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                    help='An artist\'s SoundCloud username or URL')
@@ -93,10 +92,6 @@ def download_file(url, path):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
-                
-                # done = int(50 * dl / total_length)
-                # sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )    
-                # sys.stdout.flush()
 
     return path
 
