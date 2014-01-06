@@ -20,6 +20,8 @@ def main():
                    help='An artist\'s SoundCloud username or URL')
     parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxint,
                         help='The number of tracks to download')
+    parser.add_argument('-g', '--group', action='store_true',
+                        help='Use if downloading tracks from a SoundCloud group')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -28,7 +30,10 @@ def main():
 
     artist_url = vargs['artist_url']
     if 'soundcloud' not in artist_url.lower():
-        artist_url = 'https://soundcloud.com/' + artist_url.lower()
+        if args.group:
+            artist_url = 'https://soundcloud.com/groups/' + artist_url.lower()
+        else:
+            artist_url = 'https://soundcloud.com/' + artist_url.lower()
 
     client = soundcloud.Client(client_id=CLIENT_ID)
     resolved = client.get('/resolve', url=artist_url)
@@ -39,6 +44,10 @@ def main():
         tracks = client.get('/users/' + str(artist_id) + '/tracks')
     elif resolved.kind == 'playlist':
         tracks = resolved.tracks
+    elif resolved.kind == 'group':
+        group = resolved
+        group_id = group.id
+        tracks = client.get('/groups/' + str(group_id) + '/tracks')
     else:
         artist = resolved
         artist_id = artist.id
