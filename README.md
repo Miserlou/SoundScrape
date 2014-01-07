@@ -37,6 +37,15 @@ Soundscrape can also download sets, but you have to include the full URL of the 
 soundscrape https://soundcloud.com/vsauce-awesome/sets/awesome
 ```
 
+Groups
+--------
+
+Soundscrape can also download tracks from SoundCloud groups with the *-g* argument.
+
+```bash
+soundscrape chopped-and-screwed -gn 2
+```
+
 Issues
 -------
 
