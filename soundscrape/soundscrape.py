@@ -13,6 +13,7 @@ from clint.textui import colored, puts, progress
 # Please be nice with this!
 CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
+MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 def main():
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
@@ -74,7 +75,11 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                 if track.downloadable:
                     t_track['stream_url'] = track.download_url
                 else:
-                    t_track['stream_url'] = track.stream_url
+                    if hasattr(track, 'stream_url'):
+                        t_track['stream_url'] = track.stream_url
+                    else:
+                        t_track['direct'] = True
+                        t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + MAGIC_CLIENT_ID
                 track = t_track
             except Exception, e:
                 puts(track.title.encode('utf-8') + colored.red(u' is not downloadable') + '.')
@@ -88,14 +93,16 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                 continue
             else:
                 puts(colored.green(u"Downloading") + ": " + track['title'].encode('utf-8'))
-                stream = client.get(track['stream_url'], allow_redirects=False)
-                track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
-                
-                if hasattr(stream, 'location'):
-                    location = stream.location
+                if track.get('direct', False):
+                    location = track['stream_url']
                 else:
-                    location = stream.url
+                    stream = client.get(track['stream_url'], allow_redirects=False)
+                    if hasattr(stream, 'location'):
+                        location = stream.location
+                    else:
+                        location = stream.url
 
+                track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
                 download_file(location, track_filename)
                 tag_file(track_filename, 
                         artist=track['user']['username'], 
