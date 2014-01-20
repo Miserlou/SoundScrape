@@ -46,6 +46,21 @@ Soundscrape can also download tracks from SoundCloud groups with the *-g* argume
 soundscrape chopped-and-screwed -gn 2
 ```
 
+Tracks
+--------
+
+Soundscrape can also download specific tracks with *-t*:
+
+```bash
+soundscrape foolsgoldrecs -t danny-brown-dip
+```
+
+or with just the straight URL:
+
+```bash
+soundscrape https://soundcloud.com/foolsgoldrecs/danny-brown-dip
+```
+
 Issues
 -------
 
