@@ -35,7 +35,7 @@ def main():
     track_permalink = vargs['track']
     one_track = False
     if 'soundcloud' not in artist_url.lower():
-        if args.group:
+        if vargs['group']:
             artist_url = 'https://soundcloud.com/groups/' + artist_url.lower()
         elif len(track_permalink) > 0:
             one_track = True
