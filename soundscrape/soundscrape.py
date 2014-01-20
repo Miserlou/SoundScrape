@@ -23,6 +23,8 @@ def main():
                         help='The number of tracks to download')
     parser.add_argument('-g', '--group', action='store_true',
                         help='Use if downloading tracks from a SoundCloud group')
+    parser.add_argument('-t', '--track', type=str, default='',
+                        help='The name of a specific track by an artist')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -30,14 +32,22 @@ def main():
         parser.error('Please supply an artist\'s username or URL!')
 
     artist_url = vargs['artist_url']
+    track_permalink = vargs['track']
+    one_track = False
     if 'soundcloud' not in artist_url.lower():
         if args.group:
             artist_url = 'https://soundcloud.com/groups/' + artist_url.lower()
+        elif len(track_permalink) > 0:
+            one_track = True
+            track_url = 'https://soundcloud.com/' + artist_url.lower() + '/' + track_permalink.lower()
         else:
             artist_url = 'https://soundcloud.com/' + artist_url.lower()
 
     client = soundcloud.Client(client_id=CLIENT_ID)
-    resolved = client.get('/resolve', url=artist_url)
+    if one_track:
+        resolved = client.get('/resolve', url=track_url)
+    else:
+        resolved = client.get('/resolve', url=artist_url)
 
     if resolved.kind == 'artist':
         artist = resolved
@@ -45,6 +55,8 @@ def main():
         tracks = client.get('/users/' + str(artist_id) + '/tracks')
     elif resolved.kind == 'playlist':
         tracks = resolved.tracks
+    elif resolved.kind == 'track':
+        tracks = [resolved]
     elif resolved.kind == 'group':
         group = resolved
         group_id = group.id
@@ -54,7 +66,10 @@ def main():
         artist_id = artist.id
         tracks = client.get('/users/' + str(artist_id) + '/tracks')
 
-    num_tracks = vargs['num_tracks']
+    if one_track:
+        num_tracks = 1;
+    else:
+        num_tracks = vargs['num_tracks']
     download_tracks(client, tracks, num_tracks)
 
 def download_tracks(client, tracks, num_tracks=sys.maxint):
