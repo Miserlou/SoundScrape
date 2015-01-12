@@ -4,6 +4,7 @@ import soundcloud
 import requests
 import sys
 import argparse
+import string
 
 from mutagen.easyid3 import ID3, EasyID3 
 from mutagen.mp3 import EasyMP3
@@ -72,6 +73,12 @@ def main():
         num_tracks = vargs['num_tracks']
     download_tracks(client, tracks, num_tracks)
 
+
+def sanitize_filename(filename):
+    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+    return ''.join(c for c in filename if c in valid_chars)
+
+
 def download_tracks(client, tracks, num_tracks=sys.maxint):
 
     for i, track in enumerate(tracks):
@@ -117,7 +124,8 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                     else:
                         location = stream.url
 
-                track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
+                track_filename = '{0:02d}. '.format(i + 1) + track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
+                track_filename = sanitize_filename(track_filename)
                 download_file(location, track_filename)
                 tag_file(track_filename, 
                         artist=track['user']['username'], 
