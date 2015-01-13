@@ -61,6 +61,21 @@ or with just the straight URL:
 soundscrape https://soundcloud.com/foolsgoldrecs/danny-brown-dip
 ```
 
+Likes
+--------
+
+Soundscrape can also download all of an Artist's Liked items with *-l*:
+
+```bash
+soundscrape troyboi -l
+```
+
+or with just the straight URL:
+
+```bash
+soundscrape https://soundcloud.com/troyboi/likes
+```
+
 Issues
 -------
 

@@ -25,6 +25,8 @@ def main():
                         help='The number of tracks to download')
     parser.add_argument('-g', '--group', action='store_true',
                         help='Use if downloading tracks from a SoundCloud group')
+    parser.add_argument('-l', '--likes', action='store_true',
+                        help='Download all of a user\'s Likes.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
 
@@ -44,6 +46,8 @@ def main():
             track_url = 'https://soundcloud.com/' + artist_url.lower() + '/' + track_permalink.lower()
         else:
             artist_url = 'https://soundcloud.com/' + artist_url.lower()
+            if vargs['likes']:
+                artist_url = artist_url + '/likes'
 
     client = soundcloud.Client(client_id=CLIENT_ID)
     if one_track:
