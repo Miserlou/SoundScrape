@@ -172,10 +172,10 @@ def tag_file(filename, artist, title, year, genre, artwork_url):
 
         if artwork_url:
             mime = 'image/jpeg'
-            if 'jpg' in artwork_url:
+            if '.jpg' in artwork_url:
                 mime = 'image/jpeg'
-            if 'png' in artwork_url:
-                mime - 'image/png'
+            if '.png' in artwork_url:
+                mime = 'image/png'
 
             image_data = requests.get(artwork_url).content
 
@@ -189,7 +189,7 @@ def tag_file(filename, artist, title, year, genre, artwork_url):
                     data=image_data
                 )
             )
-        audio.save()
+            audio.save()
     except Exception, e:
         print e
 
