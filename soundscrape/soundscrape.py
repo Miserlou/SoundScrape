@@ -27,6 +27,8 @@ def main():
                         help='Use if downloading tracks from a SoundCloud group')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
+    parser.add_argument('-d', '--downloadable', action='store_true',
+                        help='Only fetch traks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
 
@@ -80,10 +82,10 @@ def main():
         num_tracks = 1
     else:
         num_tracks = vargs['num_tracks']
-    download_tracks(client, tracks, num_tracks)
+    download_tracks(client, tracks, num_tracks, vargs['downloadable'])
 
 
-def download_tracks(client, tracks, num_tracks=sys.maxint):
+def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False):
 
     for i, track in enumerate(tracks):
 
@@ -103,6 +105,9 @@ def download_tracks(client, tracks, num_tracks=sys.maxint):
                 if track.downloadable:
                     t_track['stream_url'] = track.download_url
                 else:
+                    if downloadable:
+                        puts(colored.red(u"Skipping") + ": " + track.title.encode('utf-8'))
+                        continue
                     if hasattr(track, 'stream_url'):
                         t_track['stream_url'] = track.stream_url
                     else:

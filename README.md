@@ -76,6 +76,15 @@ or with just the straight URL:
 soundscrape https://soundcloud.com/troyboi/likes
 ```
 
+High-Quality Downloads Only
+--------
+
+By default, SoundScrape will try to rip everything it can. However, if you only want to download tracks that have an official download available (which are typically at a higher-quality 320kbps bitrate), you can use the *-d* argument.
+
+```bash
+soundscrape sly-dogg -d
+```
+
 Issues
 -------
 
