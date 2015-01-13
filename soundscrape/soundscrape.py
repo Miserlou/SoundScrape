@@ -51,22 +51,26 @@ def main():
     else:
         resolved = client.get('/resolve', url=artist_url)
 
-    if resolved.kind == 'artist':
-        artist = resolved
-        artist_id = artist.id
-        tracks = client.get('/users/' + str(artist_id) + '/tracks')
-    elif resolved.kind == 'playlist':
-        tracks = resolved.tracks
-    elif resolved.kind == 'track':
-        tracks = [resolved]
-    elif resolved.kind == 'group':
-        group = resolved
-        group_id = group.id
-        tracks = client.get('/groups/' + str(group_id) + '/tracks')
+    # This is is likely a 'likes' page.
+    if not hasattr(resolved, 'kind'):
+        tracks = resolved 
     else:
-        artist = resolved
-        artist_id = artist.id
-        tracks = client.get('/users/' + str(artist_id) + '/tracks')
+        if resolved.kind == 'artist':
+            artist = resolved
+            artist_id = artist.id
+            tracks = client.get('/users/' + str(artist_id) + '/tracks')
+        elif resolved.kind == 'playlist':
+            tracks = resolved.tracks
+        elif resolved.kind == 'track':
+            tracks = [resolved]
+        elif resolved.kind == 'group':
+            group = resolved
+            group_id = group.id
+            tracks = client.get('/groups/' + str(group_id) + '/tracks')
+        else:
+            artist = resolved
+            artist_id = artist.id
+            tracks = client.get('/users/' + str(artist_id) + '/tracks')
 
     if one_track:
         num_tracks = 1
