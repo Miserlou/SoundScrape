@@ -85,6 +85,15 @@ By default, SoundScrape will try to rip everything it can. However, if you only 
 soundscrape sly-dogg -d
 ```
 
+Folders
+--------
+
+By default, SoundScrape aims to act like _wget_, downloading in place in the current directory. With the *-f* argument, however, SoundScrape acts more like a download manager and sorts songs in to ./ARTIST_NAME/ARTIST_NAME_SONG_TITLE.mp3 format. It will also skip previously downloaded tracks.
+
+```bash
+soundscrape murdercitydevils -f
+```
+
 Issues
 -------
 
