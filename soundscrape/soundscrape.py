@@ -138,7 +138,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         mkdir(track_artist)
                     track_filename = track_artist + '/' + track_filename
 
-                if exists(track_filename):
+                if exists(track_filename) and folders:
                     puts(colored.yellow(u"Track already downloaded: ") + track_title.encode('utf-8'))
                     continue
 
