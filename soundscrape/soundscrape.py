@@ -4,6 +4,8 @@ import soundcloud
 import requests
 import sys
 import argparse
+from os.path import exists
+from os import mkdir
 
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
@@ -31,6 +33,8 @@ def main():
                         help='Only fetch traks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
+    parser.add_argument('-f', '--folders', action='store_true',
+                        help='Organize saved songs in folders by artists')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -82,10 +86,10 @@ def main():
         num_tracks = 1
     else:
         num_tracks = vargs['num_tracks']
-    download_tracks(client, tracks, num_tracks, vargs['downloadable'])
+    download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'])
 
 
-def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False):
+def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False):
 
     for i, track in enumerate(tracks):
 
@@ -125,6 +129,20 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False):
                 puts(track['title'].encode('utf-8') + colored.red(u' is not downloadable') + '.')
                 continue
             else:
+                track_artist = track['user']['username'].replace('/', '-')
+                track_title = track['title'].replace('/', '-')
+
+                track_filename = track_artist + ' - ' + track_title + '.mp3'
+                if folders:
+                    if not exists(track_artist):
+                        mkdir(track_artist)
+                    track_filename = track_artist + '/' + track_filename
+
+                if exists(track_filename):
+                    puts(colored.yellow(u"Track already downloaded: ") + track_title.encode('utf-8'))
+                    continue
+
+
                 puts(colored.green(u"Downloading") + ": " + track['title'].encode('utf-8'))
                 if track.get('direct', False):
                     location = track['stream_url']
@@ -135,7 +153,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False):
                     else:
                         location = stream.url
 
-                track_filename = track['user']['username'].replace('/', '-') + ' - ' + track['title'].replace('/', '-') + '.mp3'
+
                 download_file(location, track_filename)
                 tag_file(track_filename,
                         artist=track['user']['username'],
