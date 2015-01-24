@@ -1,5 +1,6 @@
 args>=0.1.0
 clint>=0.3.2
+demjson==2.2.2
 fudge==1.0.3
 mutagen==1.22
 requests>=2.1.0

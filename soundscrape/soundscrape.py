@@ -4,6 +4,8 @@ import soundcloud
 import requests
 import sys
 import argparse
+import demjson
+from datetime import datetime
 from os.path import exists
 from os import mkdir
 
@@ -27,6 +29,8 @@ def main():
                         help='The number of tracks to download')
     parser.add_argument('-g', '--group', action='store_true',
                         help='Use if downloading tracks from a SoundCloud group')
+    parser.add_argument('-b', '--bandcamp', action='store_true',
+                        help='Use if downloading from Bandcamp rather than SoundCloud')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
     parser.add_argument('-d', '--downloadable', action='store_true',
@@ -44,6 +48,15 @@ def main():
     artist_url = vargs['artist_url']
     track_permalink = vargs['track']
     one_track = False
+
+    if 'bandcamp.com' in artist_url or vargs['bandcamp']:
+        if 'bandcamp.com' in artist_url:
+            scrape_bandcamp_url(artist_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+        else:
+            bc_url = 'https://' + artist_url + '.bandcamp.com'
+            scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+        return
+
     if 'soundcloud' not in artist_url.lower():
         if vargs['group']:
             artist_url = 'https://soundcloud.com/groups/' + artist_url.lower()
@@ -63,7 +76,7 @@ def main():
 
     # This is is likely a 'likes' page.
     if not hasattr(resolved, 'kind'):
-        tracks = resolved 
+        tracks = resolved
     else:
         if resolved.kind == 'artist':
             artist = resolved
@@ -142,7 +155,6 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                     puts(colored.yellow(u"Track already downloaded: ") + track_title.encode('utf-8'))
                     continue
 
-
                 puts(colored.green(u"Downloading") + ": " + track['title'].encode('utf-8'))
                 if track.get('direct', False):
                     location = track['stream_url']
@@ -152,7 +164,6 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         location = stream.location
                     else:
                         location = stream.url
-
 
                 download_file(location, track_filename)
                 tag_file(track_filename,
@@ -178,13 +189,17 @@ def download_file(url, path):
     return path
 
 
-def tag_file(filename, artist, title, year, genre, artwork_url):
+def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
     try:
         audio = EasyMP3(filename)
         audio["artist"] = artist
         audio["title"] = title
         if year:
             audio["date"] = str(year)
+        if album:
+            audio["album"] = album
+        if track_number:
+            audio["tracknumber"] = str(track_number)
         audio["genre"] = genre
         audio.save()
 
@@ -200,9 +215,9 @@ def tag_file(filename, artist, title, year, genre, artwork_url):
             audio = MP3(filename, ID3=OldID3)
             audio.tags.add(
                 APIC(
-                    encoding=3, # 3 is for utf-8
+                    encoding=3,  # 3 is for utf-8
                     mime=mime,
-                    type=3, # 3 is for the cover image
+                    type=3,  # 3 is for the cover image
                     desc=u'Cover',
                     data=image_data
                 )
@@ -210,6 +225,63 @@ def tag_file(filename, artist, title, year, genre, artwork_url):
             audio.save()
     except Exception, e:
         print e
+
+
+# Largely borrowed from Ronier's bandcampscrape
+def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
+
+    album_data = get_bandcamp_metadata(url)
+
+    artist = album_data["artist"]
+    album_name = album_data["current"]["title"]
+
+    if folders:
+        directory = artist + " - " + album_name
+        directory = directory.replace("/", " - ")
+        if not exists(directory):
+            mkdir(directory)
+
+    for i, track in enumerate(album_data["trackinfo"]):
+
+        if i > num_tracks - 1:
+            continue
+
+        try:
+            track_name = track["title"]
+            track_number = str(track["track_num"]).zfill(2)
+            track_filename = '%s - %s.mp3' % (track_number, track_name)
+            if folders:
+                path = directory + "/" + track_filename
+                if exists(path):
+                    puts(colored.yellow(u"Track already downloaded: ") + track_name.encode('utf-8'))
+                    continue
+            else:
+                path = artist + ' - ' + track_filename
+            puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
+            download_file(track['file']['mp3-128'], path)
+            year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
+            tag_file(path,
+                    artist,
+                    track['title'],
+                    album=album_data['current']['title'],
+                    year=year,
+                    genre='',
+                    artwork_url=album_data['artFullsizeUrl'],
+                    track_number=track['track_num'])
+        except Exception, e:
+            puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
+            print e
+    return
+
+
+def get_bandcamp_metadata(url):
+    request = requests.get(url)
+    sloppy_json = request.text.split("var TralbumData = ")
+    sloppy_json = sloppy_json[1].replace('" + "', "")
+    sloppy_json = sloppy_json.replace("'", "\'")
+    sloppy_json = sloppy_json.split("};")[0] + "};"
+    sloppy_json = sloppy_json.replace("};", "}")
+    return demjson.decode(sloppy_json)
 
 if __name__ == '__main__':
     try:

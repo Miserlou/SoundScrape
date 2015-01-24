@@ -3,7 +3,7 @@
 SoundScrape
 ==============
 
-**SoundScrape** makes it super easy to download artists from SoundCloud - even those which don't have download links! It automatically creates ID3 tags as well, which is handy.
+**SoundScrape** makes it super easy to download artists from SoundCloud (and Bandcamp) - even those which don't have download links! It automatically creates ID3 tags as well (including album art), which is handy.
 
 Usage
 ---------
@@ -92,6 +92,15 @@ By default, SoundScrape aims to act like _wget_, downloading in place in the cur
 
 ```bash
 soundscrape murdercitydevils -f
+```
+
+Bandcamp
+--------
+
+SoundScrape can also pull down albums from Bandcamp. For Bandcamp pages, use the *-b* argument along with an artist's username or a specific URL. It only downloads one album at a time. This works with all of the other arguments, except *-d* as Bandcamp streams only come at one bitrate, as far as I can tell.
+
+```bash
+soundscrape warsaw -b -f
 ```
 
 Issues
