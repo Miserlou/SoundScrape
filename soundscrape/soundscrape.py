@@ -210,7 +210,15 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
             if '.png' in artwork_url:
                 mime = 'image/png'
 
-            image_data = requests.get(artwork_url).content
+            if '-large' in artwork_url:
+                new_artwork_url = artwork_url.replace('-large', '-t500x500')
+                try:
+                    image_data = requests.get(new_artwork_url).content
+                except Exception, e:
+                    # No very large image available.
+                    image_data = requests.get(artwork_url).content
+            else:
+                image_data = requests.get(artwork_url).content
 
             audio = MP3(filename, ID3=OldID3)
             audio.tags.add(
