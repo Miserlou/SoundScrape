@@ -204,6 +204,9 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
         audio.save()
 
         if artwork_url:
+
+            artwork_url = artwork_url.replace('https', 'http')
+
             mime = 'image/jpeg'
             if '.jpg' in artwork_url:
                 mime = 'image/jpeg'
