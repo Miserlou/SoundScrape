@@ -8,6 +8,7 @@ import demjson
 from datetime import datetime
 from os.path import exists
 from os import mkdir
+from subprocess import Popen, PIPE
 
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
@@ -39,6 +40,8 @@ def main():
                         help='The name of a specific track by an artist')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
+    parser.add_argument('-o', '--open', action='store_true',
+                        help='Open downloaded files after downloading.')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -99,10 +102,15 @@ def main():
         num_tracks = 1
     else:
         num_tracks = vargs['num_tracks']
-    download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'])
+    filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'])
+
+    if vargs['open']:
+        open_files(filenames)
 
 
 def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False):
+
+    filenames = []
 
     for i, track in enumerate(tracks):
 
@@ -172,9 +180,12 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         year=track['release_year'],
                         genre=track['genre'],
                         artwork_url=track['artwork_url'])
+                filenames.append(track_filename)
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
-            print e
+            print 
+
+    return filenames
 
 
 def download_file(url, path):
@@ -236,6 +247,11 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
             audio.save()
     except Exception, e:
         print e
+
+def open_files(filenames):
+    command = ['open'] + filenames
+    process = Popen(command, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
 
 
 # Largely borrowed from Ronier's bandcampscrape

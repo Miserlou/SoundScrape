@@ -103,6 +103,15 @@ SoundScrape can also pull down albums from Bandcamp. For Bandcamp pages, use the
 soundscrape warsaw -b -f
 ```
 
+Opening Files
+--------
+
+As a convenience method, SoundScrape can automatically _'open'_ files that it downloads. This uses your system's 'open' command for file associations.
+
+```bash
+soundscrape lorn -of
+```
+
 Issues
 -------
 
