@@ -54,10 +54,15 @@ def main():
 
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         if 'bandcamp.com' in artist_url:
-            scrape_bandcamp_url(artist_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+            bc_url = artist_url
         else:
             bc_url = 'https://' + artist_url + '.bandcamp.com'
-            scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+
+        filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+
+        if vargs['open']:
+            open_files(filenames)
+
         return
 
     if 'soundcloud' not in artist_url.lower():
@@ -262,6 +267,8 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
     artist = album_data["artist"]
     album_name = album_data["current"]["title"]
 
+    filenames = []
+
     if folders:
         directory = artist + " - " + album_name
         directory = directory.replace("/", " - ")
@@ -284,6 +291,11 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                     continue
             else:
                 path = artist + ' - ' + track_filename
+
+            if not track['file']:
+                puts(colored.yellow(u"Track unavailble for scraping: ") + track_name.encode('utf-8'))
+                continue
+
             puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
             download_file(track['file']['mp3-128'], path)
             year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
@@ -295,10 +307,14 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                     genre='',
                     artwork_url=album_data['artFullsizeUrl'],
                     track_number=track['track_num'])
+
+            filenames.append(path)
+
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
             print e
-    return
+
+    return filenames
 
 
 def get_bandcamp_metadata(url):
