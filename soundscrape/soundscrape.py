@@ -54,9 +54,6 @@ def main():
         parser.error('Please supply an artist\'s username or URL!')
 
     artist_url = vargs['artist_url']
-
-    print vargs
-    return
     
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
