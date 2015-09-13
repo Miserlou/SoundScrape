@@ -1,20 +1,20 @@
 #! /usr/bin/env python
 
-import soundcloud
-import requests
-import sys
 import argparse
 import demjson
-from datetime import datetime
-from os.path import exists
-from os import mkdir
-from subprocess import Popen, PIPE
+import re
+import requests
+import soundcloud
+import sys
 
+from clint.textui import colored, puts, progress
+from datetime import datetime
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
 from mutagen.id3 import ID3 as OldID3
-
-from clint.textui import colored, puts, progress
+from subprocess import Popen, PIPE
+from os.path import exists
+from os import mkdir
 
 # Please be nice with this!
 CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
@@ -176,8 +176,8 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
             else:
                 track_artist = track['user']['username'].replace('/', '-')
                 track_title = track['title'].replace('/', '-')
-
                 track_filename = track_artist + ' - ' + track_title + '.mp3'
+
                 if folders:
                     if not exists(track_artist):
                         mkdir(track_artist)
@@ -318,16 +318,17 @@ def download_file(url, path):
     """
     Download an individual file.
     """
+
+    safe_path = sanitize_filename(path)
     r = requests.get(url, stream=True)
-    with open(path, 'wb') as f:
+    with open(safe_path, 'wb') as f:
         total_length = int(r.headers.get('content-length'))
         for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
 
-    return path
-
+    return safe_path
 
 def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
     """
@@ -388,6 +389,13 @@ def open_files(filenames):
     command = ['open'] + filenames
     process = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
+
+def sanitize_filename(filename):
+    """
+    Make sure filenames are valid paths.
+    """
+    sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
+    return sanitized_filename
 
 ##
 # Main

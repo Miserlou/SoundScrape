@@ -53,6 +53,18 @@ class TestSoundscrape(unittest.TestCase):
         for f in glob.glob('*.mp3'):
            os.unlink(f)
 
+    def test_bandcamp_slashes(self):
+        for f in glob.glob('*.mp3'):
+           os.unlink(f)
+
+        mp3_count = len(glob.glob1('', "*.mp3"))
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit'}
+        process_bandcamp(vargs)
+        new_mp3_count = len(glob.glob1('', "*.mp3"))
+        self.assertTrue(new_mp3_count > mp3_count)
+        
+        for f in glob.glob('*.mp3'):
+           os.unlink(f)
 
 if __name__ == '__main__':
     unittest.main()
