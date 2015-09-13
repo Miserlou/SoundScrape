@@ -21,8 +21,13 @@ CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
-
 def main():
+    """
+    Main function.
+
+    Converts arguments to Python and processes accordingly.
+
+    """
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                    help='An artist\'s SoundCloud username or URL')
@@ -49,21 +54,28 @@ def main():
         parser.error('Please supply an artist\'s username or URL!')
 
     artist_url = vargs['artist_url']
+
+    print vargs
+    return
+    
+    if 'bandcamp.com' in artist_url or vargs['bandcamp']:
+        process_bandcamp(vargs)
+        return
+    else:
+        process_soundcloud(vargs)
+
+##
+# SoundCloud
+##
+
+def process_soundcloud(vargs):
+    """
+    Main SoundCloud path.
+    """
+
+    artist_url = vargs['artist_url']
     track_permalink = vargs['track']
     one_track = False
-
-    if 'bandcamp.com' in artist_url or vargs['bandcamp']:
-        if 'bandcamp.com' in artist_url:
-            bc_url = artist_url
-        else:
-            bc_url = 'https://' + artist_url + '.bandcamp.com'
-
-        filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
-
-        if vargs['open']:
-            open_files(filenames)
-
-        return
 
     if 'soundcloud' not in artist_url.lower():
         if vargs['group']:
@@ -76,11 +88,11 @@ def main():
             if vargs['likes']:
                 artist_url = artist_url + '/likes'
 
-    client = soundcloud.Client(client_id=CLIENT_ID)
+    client = get_client()
     if one_track:
-        resolved = client.get('/resolve', url=track_url)
+        resolved = client.get('/resolve', url=track_url, limit=200)
     else:
-        resolved = client.get('/resolve', url=artist_url)
+        resolved = client.get('/resolve', url=artist_url, limit=200)
 
     # This is is likely a 'likes' page.
     if not hasattr(resolved, 'kind'):
@@ -89,7 +101,7 @@ def main():
         if resolved.kind == 'artist':
             artist = resolved
             artist_id = artist.id
-            tracks = client.get('/users/' + str(artist_id) + '/tracks')
+            tracks = client.get('/users/' + str(artist_id) + '/tracks', limit=200)
         elif resolved.kind == 'playlist':
             tracks = resolved.tracks
         elif resolved.kind == 'track':
@@ -97,11 +109,11 @@ def main():
         elif resolved.kind == 'group':
             group = resolved
             group_id = group.id
-            tracks = client.get('/groups/' + str(group_id) + '/tracks')
+            tracks = client.get('/groups/' + str(group_id) + '/tracks', limit=200)
         else:
             artist = resolved
             artist_id = artist.id
-            tracks = client.get('/users/' + str(artist_id) + '/tracks')
+            tracks = client.get('/users/' + str(artist_id) + '/tracks', limit=200)
 
     if one_track:
         num_tracks = 1
@@ -112,8 +124,18 @@ def main():
     if vargs['open']:
         open_files(filenames)
 
+def get_client():
+    """
+    Return a new SoundCloud Client object.
+    """
+    client = soundcloud.Client(client_id=CLIENT_ID)
+    return client
 
 def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False):
+    """
+    Given a list of tracks, iteratively download all of them.
+
+    """
 
     filenames = []
 
@@ -172,7 +194,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                 if track.get('direct', False):
                     location = track['stream_url']
                 else:
-                    stream = client.get(track['stream_url'], allow_redirects=False)
+                    stream = client.get(track['stream_url'], allow_redirects=False, limit=200)
                     if hasattr(stream, 'location'):
                         location = stream.location
                     else:
@@ -192,75 +214,34 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
 
     return filenames
 
+##
+# Bandcamp
+##
 
-def download_file(url, path):
-    r = requests.get(url, stream=True)
-    with open(path, 'wb') as f:
-        total_length = int(r.headers.get('content-length'))
-        for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
-            if chunk:  # filter out keep-alive new chunks
-                f.write(chunk)
-                f.flush()
+def process_bandcamp(vargs):
+    """
+    Main BandCamp path.
+    """
 
-    return path
+    artist_url = vargs['artist_url']
 
+    if 'bandcamp.com' in artist_url:
+        bc_url = artist_url
+    else:
+        bc_url = 'https://' + artist_url + '.bandcamp.com'
 
-def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
-    try:
-        audio = EasyMP3(filename)
-        audio["artist"] = artist
-        audio["title"] = title
-        if year:
-            audio["date"] = str(year)
-        if album:
-            audio["album"] = album
-        if track_number:
-            audio["tracknumber"] = str(track_number)
-        audio["genre"] = genre
-        audio.save()
+    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
-        if artwork_url:
+    if vargs['open']:
+        open_files(filenames)
 
-            artwork_url = artwork_url.replace('https', 'http')
-
-            mime = 'image/jpeg'
-            if '.jpg' in artwork_url:
-                mime = 'image/jpeg'
-            if '.png' in artwork_url:
-                mime = 'image/png'
-
-            if '-large' in artwork_url:
-                new_artwork_url = artwork_url.replace('-large', '-t500x500')
-                try:
-                    image_data = requests.get(new_artwork_url).content
-                except Exception, e:
-                    # No very large image available.
-                    image_data = requests.get(artwork_url).content
-            else:
-                image_data = requests.get(artwork_url).content
-
-            audio = MP3(filename, ID3=OldID3)
-            audio.tags.add(
-                APIC(
-                    encoding=3,  # 3 is for utf-8
-                    mime=mime,
-                    type=3,  # 3 is for the cover image
-                    desc=u'Cover',
-                    data=image_data
-                )
-            )
-            audio.save()
-    except Exception, e:
-        print e
-
-def open_files(filenames):
-    command = ['open'] + filenames
-    process = Popen(command, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
-
+    return
 
 # Largely borrowed from Ronier's bandcampscrape
 def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
+    """
+    Pull out artist and track info from a Bandcamp URL.
+    """
 
     album_data = get_bandcamp_metadata(url)
 
@@ -318,6 +299,12 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
 
 def get_bandcamp_metadata(url):
+    """
+    Read information from the Bandcamp JavaScript object.
+
+    Sloppy. The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
+
+    """
     request = requests.get(url)
     sloppy_json = request.text.split("var TralbumData = ")
     sloppy_json = sloppy_json[1].replace('" + "', "")
@@ -325,6 +312,89 @@ def get_bandcamp_metadata(url):
     sloppy_json = sloppy_json.split("};")[0] + "};"
     sloppy_json = sloppy_json.replace("};", "}")
     return demjson.decode(sloppy_json)
+
+##
+# File Utility
+##
+
+def download_file(url, path):
+    """
+    Download an individual file.
+    """
+    r = requests.get(url, stream=True)
+    with open(path, 'wb') as f:
+        total_length = int(r.headers.get('content-length'))
+        for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+                f.flush()
+
+    return path
+
+
+def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
+    """
+    Attempt to put ID3 tags on a file.
+
+    """
+    try:
+        audio = EasyMP3(filename)
+        audio["artist"] = artist
+        audio["title"] = title
+        if year:
+            audio["date"] = str(year)
+        if album:
+            audio["album"] = album
+        if track_number:
+            audio["tracknumber"] = str(track_number)
+        audio["genre"] = genre
+        audio.save()
+
+        if artwork_url:
+
+            artwork_url = artwork_url.replace('https', 'http')
+
+            mime = 'image/jpeg'
+            if '.jpg' in artwork_url:
+                mime = 'image/jpeg'
+            if '.png' in artwork_url:
+                mime = 'image/png'
+
+            if '-large' in artwork_url:
+                new_artwork_url = artwork_url.replace('-large', '-t500x500')
+                try:
+                    image_data = requests.get(new_artwork_url).content
+                except Exception, e:
+                    # No very large image available.
+                    image_data = requests.get(artwork_url).content
+            else:
+                image_data = requests.get(artwork_url).content
+
+            audio = MP3(filename, ID3=OldID3)
+            audio.tags.add(
+                APIC(
+                    encoding=3,  # 3 is for utf-8
+                    mime=mime,
+                    type=3,  # 3 is for the cover image
+                    desc=u'Cover',
+                    data=image_data
+                )
+            )
+            audio.save()
+    except Exception, e:
+        print e
+
+def open_files(filenames):
+    """
+    Call the system 'open' command on a file.
+    """
+    command = ['open'] + filenames
+    process = Popen(command, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+
+##
+# Main
+##
 
 if __name__ == '__main__':
     try:
