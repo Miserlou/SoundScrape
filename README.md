@@ -1,6 +1,6 @@
 ![SoundScrape!](http://i.imgur.com/nHAt2ow.png)
 
-SoundScrape [![Build Status](https://travis-ci.org/Miserlou/SoundScrape.svg)](https://travis-ci.org/Miserlou/SoundScrape)
+SoundScrape [![Build Status](https://travis-ci.org/Miserlou/SoundScrape.svg)](https://travis-ci.org/Miserlou/SoundScrape) [![PyPI](https://img.shields.io/pypi/dm/SoundScrape.svg?style=flat-square)]()
 ==============
 
 **SoundScrape** makes it super easy to download artists from SoundCloud (and Bandcamp) - even those which don't have download links! It automatically creates ID3 tags as well (including album art), which is handy.
