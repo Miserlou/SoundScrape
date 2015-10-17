@@ -37,6 +37,8 @@ def main():
                         help='Use if downloading tracks from a SoundCloud group')
     parser.add_argument('-b', '--bandcamp', action='store_true',
                         help='Use if downloading from Bandcamp rather than SoundCloud')
+    parser.add_argument('-m', '--mixcloud', action='store_true',
+                        help='Use if downloading from Mixcloud rather than SoundCloud')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
     parser.add_argument('-d', '--downloadable', action='store_true',
@@ -57,7 +59,7 @@ def main():
     
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
-    elif 'mixcloud.com' in artist_url:
+    elif 'mixcloud.com' in artist_url or vargs['mixcloud']:
         process_mixcloud(vargs)
     else:
         process_soundcloud(vargs)
@@ -352,7 +354,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
 
     track_artist = sanitize_filename(data['artist'])
     track_title = sanitize_filename(data['title'])
-    track_filename = track_artist + ' - ' + track_title + '.mp3'
+    track_filename = track_artist + ' - ' + track_title + data['mp3_url'][-4:]
 
     if folders:
         if not exists(track_artist):
@@ -362,20 +364,25 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
             puts(colored.yellow(u"Skipping") + ': ' + data['title'].encode('utf-8') + " - it already exists!".encode('utf-8'))
             return []
 
-    puts(colored.green(u"Downloading") + ': ' + data['artist'] + " - " + data['title'].encode('utf-8'))
-    download_file(data['mp3_url'], track_filename)
-    tag_file(track_filename,
-            artist=data['artist'],
-            title=data['title'],
-            year=data['year'],
-            genre="Mix",
-            artwork_url=data['artwork_url'])
+    puts(colored.green(u"Downloading") + ': ' + data['artist'].encode('utf-8') + " - " + data['title'].encode('utf-8') + " (" + track_filename[-4:] + ")")
+    download_file(data['mp3_url'], track_filename) 
+    if track_filename[-4:] == '.mp3':
+        tag_file(track_filename,
+                artist=data['artist'],
+                title=data['title'],
+                year=data['year'],
+                genre="Mix",
+                artwork_url=data['artwork_url'])
     filenames.append(track_filename)
 
     return filenames
 
 def get_mixcloud_data(url):
     """
+
+    Scrapes a Mixcloud page for a track's important information.
+
+    Returns a dict of data.
 
     """
 
@@ -385,8 +392,22 @@ def get_mixcloud_data(url):
     waveform_url = request.content.split('m-waveform="')[1].split('"')[0]
     stream_server = request.content.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
 
+    # Iterate to fish for the original mp3 stream..
+    stream_server = "https://stream"
     m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
-    mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
+    for server in range(14, 23):
+        m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+        mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
+        if requests.head(mp3_url).status_code != 200:
+            mp3_url = None
+
+    # .. else fallback to an m4a.
+    if not mp3_url:
+        m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+        for server in range(14, 23):
+            mp3_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+            if requests.head(mp3_url).status_code != 200:
+                mp3_url = None
 
     full_title = request.content.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(' by ')[0].strip()
