@@ -319,6 +319,9 @@ def download_file(url, path):
     Download an individual file.
     """
 
+    if url[0:2] == '//':
+        url = 'https://' + url[2:] 
+
     safe_path = sanitize_filename(path)
     r = requests.get(url, stream=True)
     with open(safe_path, 'wb') as f:
