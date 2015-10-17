@@ -13,7 +13,7 @@ from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
 from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
-from os.path import exists
+from os.path import exists, join
 from os import mkdir
 
 # Please be nice with this!
@@ -57,7 +57,7 @@ def main():
     
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
-    elif 'mixcloud' in artist_url:
+    elif 'mixcloud.com' in artist_url:
         process_mixcloud(vargs)
     else:
         process_soundcloud(vargs)
@@ -175,14 +175,14 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                 puts(track['title'].encode('utf-8') + colored.red(u' is not downloadable') + '.')
                 continue
             else:
-                track_artist = track['user']['username'].replace('/', '-')
-                track_title = track['title'].replace('/', '-')
+                track_artist = sanitize_filename(track['user']['username'])
+                track_title = sanitize_filename(track['title'])
                 track_filename = track_artist + ' - ' + track_title + '.mp3'
 
                 if folders:
                     if not exists(track_artist):
                         mkdir(track_artist)
-                    track_filename = track_artist + '/' + track_filename
+                    track_filename = join(track_artist, track_filename)
 
                 if exists(track_filename) and folders:
                     puts(colored.yellow(u"Track already downloaded: ") + track_title.encode('utf-8'))
@@ -198,14 +198,14 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                     else:
                         location = stream.url
 
-                safe_path = download_file(location, track_filename)
-                tag_file(safe_path,
+                path = download_file(location, track_filename)
+                tag_file(path,
                         artist=track['user']['username'],
                         title=track['title'],
                         year=track['release_year'],
                         genre=track['genre'],
                         artwork_url=track['artwork_url'])
-                filenames.append(safe_path)
+                filenames.append(path)
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
             print 
@@ -250,7 +250,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
     if folders:
         directory = artist + " - " + album_name
-        directory = directory.replace("/", " - ")
+        directory = sanitize_filename(directory)
         if not exists(directory):
             mkdir(directory)
 
@@ -263,8 +263,9 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
             track_name = track["title"]
             track_number = str(track["track_num"]).zfill(2)
             track_filename = '%s - %s.mp3' % (track_number, track_name)
+            track_filename = sanitize_filename(track_filename)
             if folders:
-                path = directory + "/" + track_filename
+                path = join(directory, track_filename)
                 if exists(path):
                     puts(colored.yellow(u"Track already downloaded: ") + track_name.encode('utf-8'))
                     continue
@@ -276,9 +277,9 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                 continue
 
             puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
-            safe_path = download_file(track['file']['mp3-128'], path)
+            path = download_file(track['file']['mp3-128'], path)
             year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
-            tag_file(safe_path,
+            tag_file(path,
                     artist,
                     track['title'],
                     album=album_data['current']['title'],
@@ -287,7 +288,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                     artwork_url=album_data['artFullsizeUrl'],
                     track_number=track['track_num'])
 
-            filenames.append(safe_path)
+            filenames.append(path)
 
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
@@ -349,28 +350,27 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
 
     filenames = []
 
-    puts(colored.green(u"Downloading") + ': ' + data['artist'] + " - " + data['title'].encode('utf-8'))
-
-    track_artist = data['artist'].replace('/', '-')
-    track_title = data['title'].replace('/', '-')
+    track_artist = sanitize_filename(data['artist'])
+    track_title = sanitize_filename(data['title'])
     track_filename = track_artist + ' - ' + track_title + '.mp3'
 
     if folders:
         if not exists(track_artist):
             mkdir(track_artist)
-        track_filename = track_artist + '/' + track_filename
+        track_filename = join(track_artist, track_filename)
         if exists(track_filename):
             puts(colored.yellow(u"Skipping") + ': ' + data['title'].encode('utf-8') + " - it already exists!".encode('utf-8'))
-            return
+            return []
 
-    safe_path = download_file(data['mp3_url'], track_filename)
-    tag_file(safe_path,
+    puts(colored.green(u"Downloading") + ': ' + data['artist'] + " - " + data['title'].encode('utf-8'))
+    download_file(data['mp3_url'], track_filename)
+    tag_file(track_filename,
             artist=data['artist'],
             title=data['title'],
             year=data['year'],
             genre="Mix",
             artwork_url=data['artwork_url'])
-    filenames.append(safe_path)
+    filenames.append(track_filename)
 
     return filenames
 
@@ -415,16 +415,15 @@ def download_file(url, path):
     if url[0:2] == '//':
         url = 'https://' + url[2:] 
 
-    safe_path = sanitize_filename(path)
     r = requests.get(url, stream=True)
-    with open(safe_path, 'wb') as f:
-        total_length = int(r.headers.get('content-length'))
+    with open(path, 'wb') as f:
+        total_length = int(r.headers.get('content-length', 0))
         for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
 
-    return safe_path
+    return path
 
 def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
     """
@@ -476,8 +475,6 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
             )
             audio.save()
     except Exception, e:
-        import pdb
-        pdb.set_trace()
         print e
 
 def open_files(filenames):

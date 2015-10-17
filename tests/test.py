@@ -13,6 +13,7 @@ from nose import util
 from soundscrape.soundscrape import get_client
 from soundscrape.soundscrape import process_soundcloud
 from soundscrape.soundscrape import process_bandcamp
+from soundscrape.soundscrape import process_mixcloud
 
 class TestSoundscrape(unittest.TestCase):
 
