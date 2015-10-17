@@ -398,7 +398,9 @@ def get_mixcloud_data(url):
     for server in range(14, 23):
         m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
-        if requests.head(mp3_url).status_code != 200:
+        if requests.head(mp3_url).status_code == 200:
+            break
+        else:
             mp3_url = None
 
     # .. else fallback to an m4a.
@@ -406,8 +408,8 @@ def get_mixcloud_data(url):
         m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         for server in range(14, 23):
             mp3_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
-            if requests.head(mp3_url).status_code != 200:
-                mp3_url = None
+            if requests.head(mp3_url).status_code == 200:
+                break
 
     full_title = request.content.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(' by ')[0].strip()
