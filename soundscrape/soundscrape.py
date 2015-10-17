@@ -57,7 +57,6 @@ def main():
     
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
-        return
     else:
         process_soundcloud(vargs)
 
