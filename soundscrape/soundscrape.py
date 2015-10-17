@@ -57,6 +57,8 @@ def main():
     
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
+    elif 'mixcloud' in artist_url:
+        process_mixcloud(vargs)
     else:
         process_soundcloud(vargs)
 
@@ -196,14 +198,14 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                     else:
                         location = stream.url
 
-                download_file(location, track_filename)
-                tag_file(track_filename,
+                safe_path = download_file(location, track_filename)
+                tag_file(safe_path,
                         artist=track['user']['username'],
                         title=track['title'],
                         year=track['release_year'],
                         genre=track['genre'],
                         artwork_url=track['artwork_url'])
-                filenames.append(track_filename)
+                filenames.append(safe_path)
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
             print 
@@ -274,9 +276,9 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                 continue
 
             puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
-            download_file(track['file']['mp3-128'], path)
+            safe_path = download_file(track['file']['mp3-128'], path)
             year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
-            tag_file(path,
+            tag_file(safe_path,
                     artist,
                     track['title'],
                     album=album_data['current']['title'],
@@ -285,7 +287,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                     artwork_url=album_data['artFullsizeUrl'],
                     track_number=track['track_num'])
 
-            filenames.append(path)
+            filenames.append(safe_path)
 
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
@@ -308,6 +310,98 @@ def get_bandcamp_metadata(url):
     sloppy_json = sloppy_json.split("};")[0] + "};"
     sloppy_json = sloppy_json.replace("};", "}")
     return demjson.decode(sloppy_json)
+
+##
+# Bandcamp
+##
+
+def process_mixcloud(vargs):
+    """
+    Main MixCloud path.
+    """
+
+    artist_url = vargs['artist_url']
+
+    if 'mixcloud.com' in artist_url:
+        mc_url = artist_url
+    else:
+        mc_url = 'https://mixcloud.com/' + artist_url
+
+    filenames = scrape_mixcloud_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+
+    if vargs['open']:
+        open_files(filenames)
+
+    return
+
+def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
+    """
+
+    Returns filenames to open.
+
+    """
+
+    try:
+        data = get_mixcloud_data(mc_url)
+    except Exception, e:
+        puts(colored.red(u"Problem downloading ") + mc_url.encode('utf-8'))
+        print(e)
+
+    filenames = []
+
+    puts(colored.green(u"Downloading") + ': ' + data['artist'] + " - " + data['title'].encode('utf-8'))
+
+    track_artist = data['artist'].replace('/', '-')
+    track_title = data['title'].replace('/', '-')
+    track_filename = track_artist + ' - ' + track_title + '.mp3'
+
+    if folders:
+        if not exists(track_artist):
+            mkdir(track_artist)
+        track_filename = track_artist + '/' + track_filename
+        if exists(track_filename):
+            puts(colored.yellow(u"Skipping") + ': ' + data['title'].encode('utf-8') + " - it already exists!".encode('utf-8'))
+            return
+
+    safe_path = download_file(data['mp3_url'], track_filename)
+    tag_file(safe_path,
+            artist=data['artist'],
+            title=data['title'],
+            year=data['year'],
+            genre="Mix",
+            artwork_url=data['artwork_url'])
+    filenames.append(safe_path)
+
+    return filenames
+
+def get_mixcloud_data(url):
+    """
+
+    """
+
+    data = {}
+    request = requests.get(url)
+
+    waveform_url = request.content.split('m-waveform="')[1].split('"')[0]
+    stream_server = request.content.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
+
+    m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+    mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
+
+    full_title = request.content.split("<title>")[1].split(" | Mixcloud")[0]
+    title = full_title.split(' by ')[0].strip()
+    artist = full_title.split(' by ')[1].strip()
+
+    img_thumbnail_url = request.content.split('m-thumbnail-url="')[1].split(" ng-class")[0]
+    artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"', '')
+
+    data['mp3_url'] = mp3_url
+    data['title'] = title
+    data['artist'] = artist
+    data['artwork_url'] = artwork_url
+    data['year'] = None
+
+    return data
 
 ##
 # File Utility
@@ -382,6 +476,8 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
             )
             audio.save()
     except Exception, e:
+        import pdb
+        pdb.set_trace()
         print e
 
 def open_files(filenames):
