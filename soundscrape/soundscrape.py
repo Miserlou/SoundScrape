@@ -364,7 +364,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
             puts(colored.yellow(u"Skipping") + ': ' + data['title'].encode('utf-8') + " - it already exists!".encode('utf-8'))
             return []
 
-    puts(colored.green(u"Downloading") + ': ' + data['artist'].encode('utf-8') + " - " + data['title'].encode('utf-8') + " (" + track_filename[-4:] + ")")
+    puts(colored.green(u"Downloading") + ': ' + data['artist'].encode('utf-8') + " - " + data['title'].encode('utf-8') + " (" + track_filename[-4:].encode('utf-8') + ")")
     download_file(data['mp3_url'], track_filename) 
     if track_filename[-4:] == '.mp3':
         tag_file(track_filename,
@@ -418,10 +418,10 @@ def get_mixcloud_data(url):
     img_thumbnail_url = request.content.split('m-thumbnail-url="')[1].split(" ng-class")[0]
     artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"', '')
 
-    data['mp3_url'] = mp3_url
-    data['title'] = title
-    data['artist'] = artist
-    data['artwork_url'] = artwork_url
+    data['mp3_url'] = mp3_url.encode('utf-8')
+    data['title'] = unicode(title, 'utf-8')
+    data['artist'] = unicode(artist, 'utf-8')
+    data['artwork_url'] = artwork_url.encode('utf-8')
     data['year'] = None
 
     return data
