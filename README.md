@@ -116,6 +116,15 @@ Mixcloud currently only takes an invidiual mix. Capacity for a whole artist's pr
 soundscrape https://www.mixcloud.com/corenewsuploads/flume-essential-mix-2015-10-03/ -of
 ```
 
+Audiomack
+--------
+
+Just for fun, SoundCloud can also download individual songs from Audiomack. Not that you'd ever want to.
+
+```bash
+soundscrape -a http://www.audiomack.com/song/bottomfeedermusic/top-shottas
+```
+
 Opening Files
 --------
 
