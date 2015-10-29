@@ -2,7 +2,13 @@ import os
 from setuptools import setup
 
 # Set external files
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+try:
+    from pypandoc import convert
+    README = convert('README.md', 'rst')	 
+except ImportError:
+    README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+    print("warning: pypandoc module not found, could not convert Markdown to RST")
+
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
 
@@ -11,7 +17,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='soundscrape',
-    version='0.19.0',
+    version='0.19.1',
     packages=['soundscrape'],
     install_requires=required,
     include_package_data=True,
