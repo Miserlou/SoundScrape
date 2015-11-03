@@ -16,10 +16,14 @@ from subprocess import Popen, PIPE
 from os.path import exists, join
 from os import mkdir
 
+####################################################################
+
 # Please be nice with this!
 CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
+
+####################################################################
 
 def main():
     """
@@ -68,9 +72,9 @@ def main():
     else:
         process_soundcloud(vargs)
 
-##
+####################################################################
 # SoundCloud
-##
+####################################################################
 
 def process_soundcloud(vargs):
     """
@@ -218,9 +222,9 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
 
     return filenames
 
-##
+####################################################################
 # Bandcamp
-##
+####################################################################
 
 def process_bandcamp(vargs):
     """
@@ -232,7 +236,7 @@ def process_bandcamp(vargs):
     if 'bandcamp.com' in artist_url:
         bc_url = artist_url
     else:
-        bc_url = 'https://' + artist_url + '.bandcamp.com'
+        bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
     filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
@@ -247,12 +251,18 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
     Pull out artist and track info from a Bandcamp URL.
     """
 
+    filenames = []
     album_data = get_bandcamp_metadata(url)
+
+    # If it's a list, we're dealing with a list of Album URLs,
+    # so we call the scrape_bandcamp_url() method for each one
+    if type(album_data) is list:
+        for album_url in album_data:
+            filenames.append(scrape_bandcamp_url(album_url,num_tracks,folders))
+        return filenames
 
     artist = album_data["artist"]
     album_name = album_data["current"]["title"]
-
-    filenames = []
 
     if folders:
         directory = artist + " - " + album_name
@@ -306,21 +316,30 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 def get_bandcamp_metadata(url):
     """
     Read information from the Bandcamp JavaScript object.
-
-    Sloppy. The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
-
+    The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums), or a JSON if we can already parse album/track info from the given url.
+    The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
     """
     request = requests.get(url)
-    sloppy_json = request.text.split("var TralbumData = ")
-    sloppy_json = sloppy_json[1].replace('" + "', "")
-    sloppy_json = sloppy_json.replace("'", "\'")
-    sloppy_json = sloppy_json.split("};")[0] + "};"
-    sloppy_json = sloppy_json.replace("};", "}")
-    return demjson.decode(sloppy_json)
+    try:
+        sloppy_json = request.text.split("var TralbumData = ")
+        sloppy_json = sloppy_json[1].replace('" + "', "")
+        sloppy_json = sloppy_json.replace("'", "\'")
+        sloppy_json = sloppy_json.split("};")[0] + "};"
+        sloppy_json = sloppy_json.replace("};", "}")
+        return demjson.decode(sloppy_json)
+    except Exception, e:
+        regex_all_albums = r'<a href="(/album/[^>]+)">'
+        all_albums = re.findall(regex_all_albums,request.text,re.MULTILINE)
+        all_albums = set(all_albums)
+        album_url_list = list()
+        for album in all_albums:
+            album_url = re.sub(r'music/?$','',url) + album
+            album_url_list.append(album_url)
+        return album_url_list
 
-##
-# Bandcamp
-##
+####################################################################
+# Mixcloud
+####################################################################
 
 def process_mixcloud(vargs):
     """
@@ -430,9 +449,9 @@ def get_mixcloud_data(url):
 
     return data
 
-##
+####################################################################
 # Audiomack
-##
+####################################################################
 
 def process_audiomack(vargs):
     """
@@ -516,9 +535,10 @@ def get_audiomack_data(url):
     data['year'] = None
 
     return data
-##
+
+####################################################################
 # File Utility
-##
+####################################################################
 
 def download_file(url, path):
     """
@@ -605,9 +625,9 @@ def sanitize_filename(filename):
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
     return sanitized_filename
 
-##
+####################################################################
 # Main
-##
+####################################################################
 
 if __name__ == '__main__':
     try:
