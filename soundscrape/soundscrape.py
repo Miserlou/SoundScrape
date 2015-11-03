@@ -236,7 +236,7 @@ def process_bandcamp(vargs):
     if 'bandcamp.com' in artist_url:
         bc_url = artist_url
     else:
-        bc_url = 'https://' + artist_url + '.bandcamp.com'
+        bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
     filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
