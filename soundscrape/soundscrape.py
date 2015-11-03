@@ -16,10 +16,14 @@ from subprocess import Popen, PIPE
 from os.path import exists, join
 from os import mkdir
 
+####################################################################
+
 # Please be nice with this!
 CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
+
+####################################################################
 
 def main():
     """
@@ -68,9 +72,9 @@ def main():
     else:
         process_soundcloud(vargs)
 
-##
+####################################################################
 # SoundCloud
-##
+####################################################################
 
 def process_soundcloud(vargs):
     """
@@ -218,9 +222,9 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
 
     return filenames
 
-##
+####################################################################
 # Bandcamp
-##
+####################################################################
 
 def process_bandcamp(vargs):
     """
@@ -318,9 +322,9 @@ def get_bandcamp_metadata(url):
     sloppy_json = sloppy_json.replace("};", "}")
     return demjson.decode(sloppy_json)
 
-##
-# Bandcamp
-##
+####################################################################
+# Mixcloud
+####################################################################
 
 def process_mixcloud(vargs):
     """
@@ -430,9 +434,9 @@ def get_mixcloud_data(url):
 
     return data
 
-##
+####################################################################
 # Audiomack
-##
+####################################################################
 
 def process_audiomack(vargs):
     """
@@ -516,9 +520,10 @@ def get_audiomack_data(url):
     data['year'] = None
 
     return data
-##
+
+####################################################################
 # File Utility
-##
+####################################################################
 
 def download_file(url, path):
     """
@@ -605,9 +610,9 @@ def sanitize_filename(filename):
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
     return sanitized_filename
 
-##
+####################################################################
 # Main
-##
+####################################################################
 
 if __name__ == '__main__':
     try:
