@@ -247,22 +247,22 @@ def process_bandcamp(vargs):
 
 # Largely borrowed from Ronier's bandcampscrape
 def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
-	"""
-	Pull out artist and track info from a Bandcamp URL.
-	"""
+    """
+    Pull out artist and track info from a Bandcamp URL.
+    """
 
-	filenames = []
-	album_data = get_bandcamp_metadata(url)
+    filenames = []
+    album_data = get_bandcamp_metadata(url)
 
-	# If it's a list, we're dealing with a list of Album URLs,
-	# so we call the scrape_bandcamp_url() method for each one
-	if type(album_data) is list:
-		for album_url in album_data:
-			filenames.append(scrape_bandcamp_url(album_url,num_tracks,folders))
-		return filenames
+    # If it's a list, we're dealing with a list of Album URLs,
+    # so we call the scrape_bandcamp_url() method for each one
+    if type(album_data) is list:
+        for album_url in album_data:
+            filenames.append(scrape_bandcamp_url(album_url,num_tracks,folders))
+        return filenames
 
-	artist = album_data["artist"]
-	album_name = album_data["current"]["title"]
+    artist = album_data["artist"]
+    album_name = album_data["current"]["title"]
 
     if folders:
         directory = artist + " - " + album_name
@@ -314,28 +314,28 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
 
 def get_bandcamp_metadata(url):
-	"""
-	Read information from the Bandcamp JavaScript object.
-	The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums), or a JSON if we can already parse album/track info from the given url.
-	The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
-	"""
-	request = requests.get(url)
-	try:
-		sloppy_json = request.text.split("var TralbumData = ")
-		sloppy_json = sloppy_json[1].replace('" + "', "")
-		sloppy_json = sloppy_json.replace("'", "\'")
-		sloppy_json = sloppy_json.split("};")[0] + "};"
-		sloppy_json = sloppy_json.replace("};", "}")
-		return demjson.decode(sloppy_json)
-	except Exception, e:
-		regex_all_albums = r'<a href="(/album/[^>]+)">'
-		all_albums = re.findall(regex_all_albums,request.text,re.MULTILINE)
-		all_albums = set(all_albums)
-		album_url_list = list()
-		for album in all_albums:
-			album_url = re.sub(r'music/?$','',url) + album
-			album_url_list.append(album_url)
-		return album_url_list
+    """
+    Read information from the Bandcamp JavaScript object.
+    The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums), or a JSON if we can already parse album/track info from the given url.
+    The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
+    """
+    request = requests.get(url)
+    try:
+        sloppy_json = request.text.split("var TralbumData = ")
+        sloppy_json = sloppy_json[1].replace('" + "', "")
+        sloppy_json = sloppy_json.replace("'", "\'")
+        sloppy_json = sloppy_json.split("};")[0] + "};"
+        sloppy_json = sloppy_json.replace("};", "}")
+        return demjson.decode(sloppy_json)
+    except Exception, e:
+        regex_all_albums = r'<a href="(/album/[^>]+)">'
+        all_albums = re.findall(regex_all_albums,request.text,re.MULTILINE)
+        all_albums = set(all_albums)
+        album_url_list = list()
+        for album in all_albums:
+            album_url = re.sub(r'music/?$','',url) + album
+            album_url_list.append(album_url)
+        return album_url_list
 
 ####################################################################
 # Mixcloud
