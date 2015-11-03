@@ -88,7 +88,13 @@ soundscrape sly-dogg -d
 Folders
 --------
 
-By default, SoundScrape aims to act like _wget_, downloading in place in the current directory. With the *-f* argument, however, SoundScrape acts more like a download manager and sorts songs in to ./ARTIST_NAME/ARTIST_NAME_SONG_TITLE.mp3 format. It will also skip previously downloaded tracks.
+By default, SoundScrape aims to act like _wget_, downloading in place in the current directory. With the *-f* argument, however, SoundScrape acts more like a download manager and sorts songs into the following format:
+
+```
+./ARTIST_NAME - ALBUM_NAME/SONG_NUMBER - SONG_TITLE.mp3
+```
+
+It will also skip previously downloaded tracks.
 
 ```bash
 soundscrape murdercitydevils -f
@@ -98,6 +104,8 @@ Bandcamp
 --------
 
 SoundScrape can also pull down albums from Bandcamp. For Bandcamp pages, use the *-b* argument along with an artist's username or a specific URL. It only downloads one album at a time. This works with all of the other arguments, except *-d* as Bandcamp streams only come at one bitrate, as far as I can tell.
+
+Note: Currently, when using the *-n* argument, the limit is evaluated for each album separately.
 
 ```bash
 soundscrape warsaw -b -f
