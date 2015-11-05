@@ -265,7 +265,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
         return filenames
 
     artist = album_data["artist"]
-    album_name = album_data["current"]["title"]
+    album_name = album_data["album_name"]
 
     if folders:
         directory = artist + " - " + album_name
@@ -280,16 +280,22 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
         try:
             track_name = track["title"]
-            track_number = str(track["track_num"]).zfill(2)
-            track_filename = '%s - %s.mp3' % (track_number, track_name)
+            if track["track_num"]:
+                track_number = str(track["track_num"]).zfill(2)
+            else:
+                track_number = None
+            if track_number and folders:
+                track_filename = '%s - %s.mp3' % (track_number, track_name)
+            else:
+                track_filename = '%s.mp3' % (track_name)
             track_filename = sanitize_filename(track_filename)
             if folders:
                 path = join(directory, track_filename)
-                if exists(path):
-                    puts(colored.yellow(u"Track already downloaded: ") + track_name.encode('utf-8'))
-                    continue
             else:
                 path = artist + ' - ' + track_filename
+            if exists(path):
+                puts(colored.yellow(u"Track already downloaded: ") + track_name.encode('utf-8'))
+                continue
 
             if not track['file']:
                 puts(colored.yellow(u"Track unavailble for scraping: ") + track_name.encode('utf-8'))
@@ -297,29 +303,32 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
             puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
             path = download_file(track['file']['mp3-128'], path)
-            year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
+            if album_data['album_release_date']:
+                year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
+            else:
+                year = None
             tag_file(path,
                     artist,
                     track['title'],
-                    album=album_data['current']['title'],
+                    album=album_name,
                     year=year,
-                    genre='',
+                    genre=album_data['genre'],
                     artwork_url=album_data['artFullsizeUrl'],
-                    track_number=track['track_num'])
+                    track_number=track_number)
 
             filenames.append(path)
 
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
             print e
-
     return filenames
 
 
 def get_bandcamp_metadata(url):
     """
     Read information from the Bandcamp JavaScript object.
-    The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums), or a JSON if we can already parse album/track info from the given url.
+    The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums),
+    or a JSON if we can already parse album/track info from the given url.
     The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
     """
     request = requests.get(url)
@@ -329,16 +338,34 @@ def get_bandcamp_metadata(url):
         sloppy_json = sloppy_json.replace("'", "\'")
         sloppy_json = sloppy_json.split("};")[0] + "};"
         sloppy_json = sloppy_json.replace("};", "}")
-        return demjson.decode(sloppy_json)
+        output = demjson.decode(sloppy_json)
+    # if the JSON parser failed, we should consider it's a "/music" page,
+    # so we generate a list of albums/tracks and return it immediately
     except Exception, e:
-        regex_all_albums = r'<a href="(/album/[^>]+)">'
+        regex_all_albums = r'<a href="(/(?:album|track)/[^>]+)">'
         all_albums = re.findall(regex_all_albums,request.text,re.MULTILINE)
-        all_albums = set(all_albums)
         album_url_list = list()
         for album in all_albums:
             album_url = re.sub(r'music/?$','',url) + album
             album_url_list.append(album_url)
         return album_url_list
+    # if the JSON parser was successful, use a regex to get all tags
+    # from this album/track, join them and set it as the "genre"
+    regex_tags = r'<a class="tag" href[^>]+>([^<]+)</a>'
+    tags = re.findall(regex_tags,request.text,re.MULTILINE)
+    # make sure we treat integers correctly with join()
+    # according to http://stackoverflow.com/a/7323861
+    # (very unlikely, but better safe than sorry!)
+    output['genre'] = ' '.join(str(s) for s in tags)
+    # make sure we always get the correct album name, even if this is a
+    # track URL (unless this track does not belong to any album, in which
+    # case the album name remains set as None.
+    output['album_name'] = None
+    regex_album_name = r'album_title\s*:\s*"([^"]+)"\s*,'
+    match = re.search(regex_album_name,request.text,re.MULTILINE)
+    if match:
+        output['album_name'] = match.group(1)
+    return output
 
 ####################################################################
 # Mixcloud
@@ -561,13 +588,14 @@ def download_file(url, path):
 
     return path
 
-def tag_file(filename, artist, title, year, genre, artwork_url, album=None, track_number=None):
+def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, album=None, track_number=None):
     """
     Attempt to put ID3 tags on a file.
 
     """
     try:
         audio = EasyMP3(filename)
+        audio.tags = None
         audio["artist"] = artist
         audio["title"] = title
         if year:
@@ -576,7 +604,8 @@ def tag_file(filename, artist, title, year, genre, artwork_url, album=None, trac
             audio["album"] = album
         if track_number:
             audio["tracknumber"] = str(track_number)
-        audio["genre"] = genre
+        if genre:
+            audio["genre"] = genre
         audio.save()
 
         if artwork_url:
