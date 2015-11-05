@@ -83,6 +83,7 @@ def process_soundcloud(vargs):
 
     artist_url = vargs['artist_url']
     track_permalink = vargs['track']
+    id3_extras = {}
     one_track = False
 
     if 'soundcloud' not in artist_url.lower():
@@ -112,6 +113,7 @@ def process_soundcloud(vargs):
             tracks = client.get('/users/' + str(artist_id) + '/tracks', limit=200)
         elif resolved.kind == 'playlist':
             tracks = resolved.tracks
+            id3_extras['album'] = resolved.title
         elif resolved.kind == 'track':
             tracks = [resolved]
         elif resolved.kind == 'group':
@@ -127,7 +129,7 @@ def process_soundcloud(vargs):
         num_tracks = 1
     else:
         num_tracks = vargs['num_tracks']
-    filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'])
+    filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
 
     if vargs['open']:
         open_files(filenames)
@@ -139,7 +141,7 @@ def get_client():
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
 
-def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False):
+def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False, id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -214,6 +216,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         title=track['title'],
                         year=track['release_year'],
                         genre=track['genre'],
+                        album=id3_extras.get('album', None),
                         artwork_url=track['artwork_url'])
                 filenames.append(path)
         except Exception, e:
