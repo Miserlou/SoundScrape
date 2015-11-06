@@ -243,6 +243,13 @@ def process_bandcamp(vargs):
 
     filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
+    # first, remove any empty sublists inside our outter list
+    # ( reference: http://stackoverflow.com/a/19875634 )
+    filenames = [sub for sub in filenames if sub]
+    # now, make sure we "flatten" the list
+    # ( reference: http://stackoverflow.com/a/11264751 )
+    filenames = [val for sub in filenames for val in sub]
+
     if vargs['open']:
         open_files(filenames)
 
@@ -268,7 +275,10 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
     album_name = album_data["album_name"]
 
     if folders:
-        directory = artist + " - " + album_name
+        if album_name:
+            directory = artist + " - " + album_name
+        else:
+            directory = artist
         directory = sanitize_filename(directory)
         if not exists(directory):
             mkdir(directory)
@@ -301,17 +311,18 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
                 puts(colored.yellow(u"Track unavailble for scraping: ") + track_name.encode('utf-8'))
                 continue
 
-            puts(colored.green(u"Downloading") + ': ' + track['title'].encode('utf-8'))
+            puts(colored.green(u"Downloading") + ': ' + track_name.encode('utf-8'))
             path = download_file(track['file']['mp3-128'], path)
-            if album_data['album_release_date']:
-                year = datetime.strptime(album_data['album_release_date'], "%d %b %Y %H:%M:%S GMT").year
-            else:
-                year = None
+
+            album_year = album_data['album_release_date']
+            if album_year:
+                album_year = datetime.strptime(album_year, "%d %b %Y %H:%M:%S GMT").year
+
             tag_file(path,
                     artist,
-                    track['title'],
+                    track_name,
                     album=album_name,
-                    year=year,
+                    year=album_year,
                     genre=album_data['genre'],
                     artwork_url=album_data['artFullsizeUrl'],
                     track_number=track_number)
@@ -319,7 +330,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
             filenames.append(path)
 
         except Exception, e:
-            puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
+            puts(colored.red(u"Problem downloading ") + track_name.encode('utf-8'))
             print e
     return filenames
 
