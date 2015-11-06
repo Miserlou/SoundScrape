@@ -62,7 +62,7 @@ def main():
         parser.error('Please supply an artist\'s username or URL!')
 
     artist_url = vargs['artist_url']
-    
+
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
     elif 'mixcloud.com' in artist_url or vargs['mixcloud']:
@@ -134,12 +134,14 @@ def process_soundcloud(vargs):
     if vargs['open']:
         open_files(filenames)
 
+
 def get_client():
     """
     Return a new SoundCloud Client object.
     """
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
+
 
 def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False, id3_extras={}):
     """
@@ -221,7 +223,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                 filenames.append(path)
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
-            print 
+            print(e)
 
     return filenames
 
@@ -255,6 +257,7 @@ def process_bandcamp(vargs):
 
     return
 
+
 # Largely borrowed from Ronier's bandcampscrape
 def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
     """
@@ -268,7 +271,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
     # so we call the scrape_bandcamp_url() method for each one
     if type(album_data) is list:
         for album_url in album_data:
-            filenames.append(scrape_bandcamp_url(album_url,num_tracks,folders))
+            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders))
         return filenames
 
     artist = album_data["artist"]
@@ -331,7 +334,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
         except Exception, e:
             puts(colored.red(u"Problem downloading ") + track_name.encode('utf-8'))
-            print e
+            print(e)
     return filenames
 
 
@@ -354,16 +357,16 @@ def get_bandcamp_metadata(url):
     # so we generate a list of albums/tracks and return it immediately
     except Exception, e:
         regex_all_albums = r'<a href="(/(?:album|track)/[^>]+)">'
-        all_albums = re.findall(regex_all_albums,request.text,re.MULTILINE)
+        all_albums = re.findall(regex_all_albums, request.text, re.MULTILINE)
         album_url_list = list()
         for album in all_albums:
-            album_url = re.sub(r'music/?$','',url) + album
+            album_url = re.sub(r'music/?$', '', url) + album
             album_url_list.append(album_url)
         return album_url_list
     # if the JSON parser was successful, use a regex to get all tags
     # from this album/track, join them and set it as the "genre"
     regex_tags = r'<a class="tag" href[^>]+>([^<]+)</a>'
-    tags = re.findall(regex_tags,request.text,re.MULTILINE)
+    tags = re.findall(regex_tags, request.text, re.MULTILINE)
     # make sure we treat integers correctly with join()
     # according to http://stackoverflow.com/a/7323861
     # (very unlikely, but better safe than sorry!)
@@ -373,7 +376,7 @@ def get_bandcamp_metadata(url):
     # case the album name remains set as None.
     output['album_name'] = None
     regex_album_name = r'album_title\s*:\s*"([^"]+)"\s*,'
-    match = re.search(regex_album_name,request.text,re.MULTILINE)
+    match = re.search(regex_album_name, request.text, re.MULTILINE)
     if match:
         output['album_name'] = match.group(1)
     return output
@@ -400,6 +403,7 @@ def process_mixcloud(vargs):
         open_files(filenames)
 
     return
+
 
 def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
     """
@@ -429,7 +433,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
             return []
 
     puts(colored.green(u"Downloading") + ': ' + data['artist'].encode('utf-8') + " - " + data['title'].encode('utf-8') + " (" + track_filename[-4:].encode('utf-8') + ")")
-    download_file(data['mp3_url'], track_filename) 
+    download_file(data['mp3_url'], track_filename)
     if track_filename[-4:] == '.mp3':
         tag_file(track_filename,
                 artist=data['artist'],
@@ -440,6 +444,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
     filenames.append(track_filename)
 
     return filenames
+
 
 def get_mixcloud_data(url):
     """
@@ -513,6 +518,7 @@ def process_audiomack(vargs):
 
     return
 
+
 def scrape_audiomack_url(mc_url, num_tracks=sys.maxint, folders=False):
     """
 
@@ -541,7 +547,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxint, folders=False):
             return []
 
     puts(colored.green(u"Downloading") + ': ' + data['artist'].encode('utf-8') + " - " + data['title'].encode('utf-8'))
-    download_file(data['mp3_url'], track_filename) 
+    download_file(data['mp3_url'], track_filename)
     tag_file(track_filename,
             artist=data['artist'],
             title=data['title'],
@@ -551,6 +557,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxint, folders=False):
     filenames.append(track_filename)
 
     return filenames
+
 
 def get_audiomack_data(url):
     """
@@ -587,7 +594,7 @@ def download_file(url, path):
     """
 
     if url[0:2] == '//':
-        url = 'https://' + url[2:] 
+        url = 'https://' + url[2:]
 
     r = requests.get(url, stream=True)
     with open(path, 'wb') as f:
@@ -598,6 +605,7 @@ def download_file(url, path):
                 f.flush()
 
     return path
+
 
 def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, album=None, track_number=None):
     """
@@ -651,7 +659,8 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
             )
             audio.save()
     except Exception, e:
-        print e
+        print(e)
+
 
 def open_files(filenames):
     """
@@ -660,6 +669,7 @@ def open_files(filenames):
     command = ['open'] + filenames
     process = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
+
 
 def sanitize_filename(filename):
     """
@@ -676,4 +686,4 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except Exception, e:
-        print e
+        print(e)
