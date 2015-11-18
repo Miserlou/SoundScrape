@@ -245,12 +245,16 @@ def process_bandcamp(vargs):
 
     filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
-    # first, remove any empty sublists inside our outter list
-    # ( reference: http://stackoverflow.com/a/19875634 )
-    filenames = [sub for sub in filenames if sub]
-    # now, make sure we "flatten" the list
-    # ( reference: http://stackoverflow.com/a/11264751 )
-    filenames = [val for sub in filenames for val in sub]
+    # check if we have lists inside a list, which indicates the
+    # scraping has gone recursive, so we must format the output
+    # ( reference: http://stackoverflow.com/a/5251706 )
+    if any(isinstance(elem, list) for elem in filenames):
+        # first, remove any empty sublists inside our outter list
+        # ( reference: http://stackoverflow.com/a/19875634 )
+        filenames = [sub for sub in filenames if sub]
+        # now, make sure we "flatten" the list
+        # ( reference: http://stackoverflow.com/a/11264751 )
+        filenames = [val for sub in filenames for val in sub]
 
     if vargs['open']:
         open_files(filenames)
