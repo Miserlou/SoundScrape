@@ -178,7 +178,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         t_track['direct'] = True
                         t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + MAGIC_CLIENT_ID
                 track = t_track
-            except Exception, e:
+            except Exception as e:
                 puts(track.title.encode('utf-8') + colored.red(u' is not downloadable') + '.')
                 continue
 
@@ -221,7 +221,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, f
                         album=id3_extras.get('album', None),
                         artwork_url=track['artwork_url'])
                 filenames.append(path)
-        except Exception, e:
+        except Exception as e:
             puts(colored.red(u"Problem downloading ") + track['title'].encode('utf-8'))
             print(e)
 
@@ -336,7 +336,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
 
             filenames.append(path)
 
-        except Exception, e:
+        except Exception as e:
             puts(colored.red(u"Problem downloading ") + track_name.encode('utf-8'))
             print(e)
     return filenames
@@ -359,7 +359,7 @@ def get_bandcamp_metadata(url):
         output = demjson.decode(sloppy_json)
     # if the JSON parser failed, we should consider it's a "/music" page,
     # so we generate a list of albums/tracks and return it immediately
-    except Exception, e:
+    except Exception as e:
         regex_all_albums = r'<a href="(/(?:album|track)/[^>]+)">'
         all_albums = re.findall(regex_all_albums, request.text, re.MULTILINE)
         album_url_list = list()
@@ -418,7 +418,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
 
     try:
         data = get_mixcloud_data(mc_url)
-    except Exception, e:
+    except Exception as e:
         puts(colored.red(u"Problem downloading ") + mc_url.encode('utf-8'))
         print(e)
 
@@ -532,7 +532,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxint, folders=False):
 
     try:
         data = get_audiomack_data(mc_url)
-    except Exception, e:
+    except Exception as e:
         puts(colored.red(u"Problem downloading ") + mc_url.encode('utf-8'))
         print(e)
 
@@ -645,7 +645,7 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
                 new_artwork_url = artwork_url.replace('-large', '-t500x500')
                 try:
                     image_data = requests.get(new_artwork_url).content
-                except Exception, e:
+                except Exception as e:
                     # No very large image available.
                     image_data = requests.get(artwork_url).content
             else:
@@ -662,7 +662,7 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
                 )
             )
             audio.save()
-    except Exception, e:
+    except Exception as e:
         print(e)
 
 
@@ -689,5 +689,5 @@ def sanitize_filename(filename):
 if __name__ == '__main__':
     try:
         sys.exit(main())
-    except Exception, e:
+    except Exception as e:
         print(e)
