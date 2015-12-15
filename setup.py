@@ -15,6 +15,8 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
+# Not happy about this..
+os.system('pip install https://bitbucket.org/lazka/mutagen/get/default.tar.gz') 
 setup(
     name='soundscrape',
     version='0.22.2',
