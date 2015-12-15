@@ -35,7 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                    help='An artist\'s SoundCloud username or URL')
-    parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxint,
+    parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxsize,
                         help='The number of tracks to download')
     parser.add_argument('-g', '--group', action='store_true',
                         help='Use if downloading tracks from a SoundCloud group')
@@ -143,7 +143,7 @@ def get_client():
     return client
 
 
-def download_tracks(client, tracks, num_tracks=sys.maxint, downloadable=False, folders=False, id3_extras={}):
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -263,7 +263,7 @@ def process_bandcamp(vargs):
 
 
 # Largely borrowed from Ronier's bandcampscrape
-def scrape_bandcamp_url(url, num_tracks=sys.maxint, folders=False):
+def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
     """
     Pull out artist and track info from a Bandcamp URL.
     """
@@ -409,7 +409,7 @@ def process_mixcloud(vargs):
     return
 
 
-def scrape_mixcloud_url(mc_url, num_tracks=sys.maxint, folders=False):
+def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
     """
 
     Returns filenames to open.
@@ -523,7 +523,7 @@ def process_audiomack(vargs):
     return
 
 
-def scrape_audiomack_url(mc_url, num_tracks=sys.maxint, folders=False):
+def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
     """
 
     Returns filenames to open.
