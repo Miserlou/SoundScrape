@@ -491,10 +491,10 @@ def get_mixcloud_data(url):
     img_thumbnail_url = request.content.split('m-thumbnail-url="')[1].split(" ng-class")[0]
     artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"', '')
 
-    data['mp3_url'] = mp3_url.encode('utf-8')
-    data['title'] = unicode(title, 'utf-8')
-    data['artist'] = unicode(artist, 'utf-8')
-    data['artwork_url'] = artwork_url.encode('utf-8')
+    data['mp3_url'] = u'' + mp3_url.encode('utf-8')
+    data['title'] = u'' + title.encode('utf-8')
+    data['artist'] = u'' + artist.encode('utf-8')
+    data['artwork_url'] = u'' + artwork_url.encode('utf-8')
     data['year'] = None
 
     return data
@@ -580,10 +580,10 @@ def get_audiomack_data(url):
     title = request.content.split('<span class="artist">')[1].split('</span>')[1].split('</h1>')[0].strip()
     artwork_url = request.content.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
 
-    data['mp3_url'] = mp3_url.encode('utf-8')
-    data['title'] = unicode(title, 'utf-8')
-    data['artist'] = unicode(artist, 'utf-8')
-    data['artwork_url'] = artwork_url.encode('utf-8')
+    data['mp3_url'] = u'' + mp3_url.encode('utf-8')
+    data['title'] = u'' + title.encode('utf-8')
+    data['artist'] = u'' + artist.encode('utf-8')
+    data['artwork_url'] = u'' + artwork_url.encode('utf-8')
     data['year'] = None
 
     return data
