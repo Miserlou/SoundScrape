@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import unicode_literals
 
 import argparse
 import demjson
@@ -110,7 +111,7 @@ def process_soundcloud(vargs):
         if resolved.kind == 'artist':
             artist = resolved
             artist_id = artist.id
-            tracks = client.get('/users/' + str(artist_id) + '/tracks', limit=200)
+            tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
         elif resolved.kind == 'playlist':
             tracks = resolved.tracks
             id3_extras['album'] = resolved.title
@@ -119,11 +120,11 @@ def process_soundcloud(vargs):
         elif resolved.kind == 'group':
             group = resolved
             group_id = group.id
-            tracks = client.get('/groups/' + str(group_id) + '/tracks', limit=200)
+            tracks = client.get('/groups/' + group_id + '/tracks', limit=200)
         else:
             artist = resolved
             artist_id = artist.id
-            tracks = client.get('/users/' + str(artist_id) + '/tracks', limit=200)
+            tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
 
     if one_track:
         num_tracks = 1
@@ -176,7 +177,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                         t_track['stream_url'] = track.stream_url
                     else:
                         t_track['direct'] = True
-                        t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + MAGIC_CLIENT_ID
+                        t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + track.id + '/stream?client_id=' + MAGIC_CLIENT_ID
                 track = t_track
             except Exception as e:
                 puts(track.title + colored.red(' is not downloadable') + '.')
@@ -374,7 +375,7 @@ def get_bandcamp_metadata(url):
     # make sure we treat integers correctly with join()
     # according to http://stackoverflow.com/a/7323861
     # (very unlikely, but better safe than sorry!)
-    output['genre'] = ' '.join(str(s) for s in tags)
+    output['genre'] = ' '.join(s for s in tags)
     # make sure we always get the correct album name, even if this is a
     # track URL (unless this track does not belong to any album, in which
     # case the album name remains set as None.
@@ -469,7 +470,7 @@ def get_mixcloud_data(url):
     stream_server = "https://stream"
     m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
     for server in range(14, 23):
-        m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+        m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
         if requests.head(mp3_url).status_code == 200:
             break
@@ -480,7 +481,7 @@ def get_mixcloud_data(url):
     if not mp3_url:
         m4a_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         for server in range(14, 23):
-            mp3_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+            mp3_url = waveform_url.replace("https://waveforms-mix.netdna-ssl.com", stream_server + server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
             if requests.head(mp3_url).status_code == 200:
                 break
 
@@ -626,7 +627,7 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
         if album:
             audio["album"] = album
         if track_number:
-            audio["tracknumber"] = str(track_number)
+            audio["tracknumber"] = track_number
         if genre:
             audio["genre"] = genre
         audio.save()
