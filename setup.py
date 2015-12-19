@@ -19,7 +19,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 os.system('pip install https://bitbucket.org/lazka/mutagen/get/default.tar.gz') 
 setup(
     name='soundscrape',
-    version='0.22.2',
+    version='0.23.0',
     packages=['soundscrape'],
     install_requires=required,
     extras_require={ ':python_version < "3.0"': [ 'wsgiref>=0.1.2', ], },    
@@ -42,6 +42,9 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
