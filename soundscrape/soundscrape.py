@@ -462,8 +462,8 @@ def get_mixcloud_data(url):
     data = {}
     request = requests.get(url)
 
-    waveform_url = request.content.split('m-waveform="')[1].split('"')[0]
-    stream_server = request.content.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
+    waveform_url = request.text.split('m-waveform="')[1].split('"')[0]
+    stream_server = request.text.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
 
     # Iterate to fish for the original mp3 stream..
     stream_server = "https://stream"
@@ -484,11 +484,11 @@ def get_mixcloud_data(url):
             if requests.head(mp3_url).status_code == 200:
                 break
 
-    full_title = request.content.split("<title>")[1].split(" | Mixcloud")[0]
+    full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(' by ')[0].strip()
     artist = full_title.split(' by ')[1].strip()
 
-    img_thumbnail_url = request.content.split('m-thumbnail-url="')[1].split(" ng-class")[0]
+    img_thumbnail_url = request.text.split('m-thumbnail-url="')[1].split(" ng-class")[0]
     artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"', '')
 
     data['mp3_url'] = '' + mp3_url.encode('utf-8')
@@ -575,10 +575,10 @@ def get_audiomack_data(url):
     data = {}
     request = requests.get(url)
 
-    mp3_url = request.content.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
-    artist = request.content.split('<span class="artist">')[1].split('</span>')[0].strip()
-    title = request.content.split('<span class="artist">')[1].split('</span>')[1].split('</h1>')[0].strip()
-    artwork_url = request.content.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
+    mp3_url = request.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
+    artist = request.text.split('<span class="artist">')[1].split('</span>')[0].strip()
+    title = request.text.split('<span class="artist">')[1].split('</span>')[1].split('</h1>')[0].strip()
+    artwork_url = request.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
 
     data['mp3_url'] = '' + mp3_url.encode('utf-8')
     data['title'] = '' + title.encode('utf-8')
