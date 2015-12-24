@@ -110,7 +110,7 @@ def process_soundcloud(vargs):
     else:
         if resolved.kind == 'artist':
             artist = resolved
-            artist_id = artist.id
+            artist_id = str(artist.id)
             tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
         elif resolved.kind == 'playlist':
             tracks = resolved.tracks
@@ -119,11 +119,11 @@ def process_soundcloud(vargs):
             tracks = [resolved]
         elif resolved.kind == 'group':
             group = resolved
-            group_id = group.id
+            group_id = str(group.id)
             tracks = client.get('/groups/' + group_id + '/tracks', limit=200)
         else:
             artist = resolved
-            artist_id = artist.id
+            artist_id = str(artist.id)
             tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
 
     if one_track:
