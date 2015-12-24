@@ -26,7 +26,7 @@ os.system(pip_version + ' install https://bitbucket.org/lazka/mutagen/get/defaul
 
 setup(
     name='soundscrape',
-    version='0.23.3',
+    version='0.23.4',
     packages=['soundscrape'],
     install_requires=required,
     extras_require={ ':python_version < "3.0"': [ 'wsgiref>=0.1.2', ], },    
