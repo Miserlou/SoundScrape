@@ -159,6 +159,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
         if isinstance(track, soundcloud.resource.Resource):
 
             try:
+
                 t_track = {}
                 t_track['downloadable'] = track.downloadable
                 t_track['streamable'] = track.streamable
@@ -171,7 +172,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                     t_track['stream_url'] = track.download_url
                 else:
                     if downloadable:
-                        puts(colored.red("Skipping") + ": " + track.title)
+                        puts(colored.red("Skipping") + colored.white(": " + track.title))
                         continue
                     if hasattr(track, 'stream_url'):
                         t_track['stream_url'] = track.stream_url
@@ -180,14 +181,14 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                         t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + track.id + '/stream?client_id=' + MAGIC_CLIENT_ID
                 track = t_track
             except Exception as e:
-                puts(track.title + colored.red(' is not downloadable') + '.')
+                puts(colored.white(track.title) + colored.red(' is not downloadable.'))
                 continue
 
         if i > num_tracks - 1:
             continue
         try:
             if not track.get('stream_url', False):
-                puts(track['title'] + colored.red(' is not downloadable') + '.')
+                puts(colored.white(track['title']) + colored.red(' is not downloadable.'))
                 continue
             else:
                 track_artist = sanitize_filename(track['user']['username'])
@@ -200,10 +201,10 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                     track_filename = join(track_artist, track_filename)
 
                 if exists(track_filename) and folders:
-                    puts(colored.yellow("Track already downloaded: ") + track_title)
+                    puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
 
-                puts(colored.green("Downloading") + ": " + track['title'])
+                puts(colored.green("Downloading") + colored.white(": " + track['title']))
                 if track.get('direct', False):
                     location = track['stream_url']
                 else:
@@ -223,7 +224,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                         artwork_url=track['artwork_url'])
                 filenames.append(path)
         except Exception as e:
-            puts(colored.red("Problem downloading ") + track['title'])
+            puts(colored.red("Problem downloading ") + colored.white(track['title']))
             print(e)
 
     return filenames
@@ -312,14 +313,14 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
             else:
                 path = artist + ' - ' + track_filename
             if exists(path):
-                puts(colored.yellow("Track already downloaded: ") + track_name)
+                puts(colored.yellow("Track already downloaded: ") + colored.white(track_name))
                 continue
 
             if not track['file']:
-                puts(colored.yellow("Track unavailble for scraping: ") + track_name)
+                puts(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
                 continue
 
-            puts(colored.green("Downloading") + ': ' + track_name)
+            puts(colored.green("Downloading") + colored.white(": " + track_name))
             path = download_file(track['file']['mp3-128'], path)
 
             album_year = album_data['album_release_date']
@@ -338,7 +339,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
             filenames.append(path)
 
         except Exception as e:
-            puts(colored.red("Problem downloading ") + track_name)
+            puts(colored.red("Problem downloading ") + colored.white(track_name))
             print(e)
     return filenames
 
@@ -435,10 +436,10 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
             mkdir(track_artist)
         track_filename = join(track_artist, track_filename)
         if exists(track_filename):
-            puts(colored.yellow("Skipping") + ': ' + data['title'] + " - it already exists!")
+            puts(colored.yellow("Skipping") + colored.white( ': ' + data['title'] + " - it already exists!"))
             return []
 
-    puts(colored.green("Downloading") + ': ' + data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")")
+    puts(colored.green("Downloading") + colored.white(': ' +  data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")"))
     download_file(data['mp3_url'], track_filename)
     if track_filename[-4:] == '.mp3':
         tag_file(track_filename,
@@ -550,10 +551,10 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
             mkdir(track_artist)
         track_filename = join(track_artist, track_filename)
         if exists(track_filename):
-            puts(colored.yellow("Skipping") + ': ' + data['title'] + " - it already exists!")
+            puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
 
-    puts(colored.green("Downloading") + ': ' + data['artist'] + " - " + data['title'])
+    puts(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
     download_file(data['mp3_url'], track_filename)
     tag_file(track_filename,
             artist=data['artist'],
