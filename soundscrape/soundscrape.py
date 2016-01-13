@@ -86,7 +86,8 @@ def process_soundcloud(vargs):
     track_permalink = vargs['track']
     id3_extras = {}
     one_track = False
-
+    likes = False
+    client = get_client()
     if 'soundcloud' not in artist_url.lower():
         if vargs['group']:
             artist_url = 'https://soundcloud.com/groups/' + artist_url.lower()
@@ -95,12 +96,16 @@ def process_soundcloud(vargs):
             track_url = 'https://soundcloud.com/' + artist_url.lower() + '/' + track_permalink.lower()
         else:
             artist_url = 'https://soundcloud.com/' + artist_url.lower()
-            if vargs['likes']:
-                artist_url = artist_url + '/likes'
+            if vargs['likes'] or 'likes' in artist_url.lower():
+                likes = True     
+    if 'likes' in artist_url.lower(): 
+        artist_url = artist_url[0:artist_url.find('/likes')]
 
-    client = get_client()
     if one_track:
         resolved = client.get('/resolve', url=track_url, limit=200)
+    elif likes:
+        userId = str(client.get('/resolve', url=artist_url).id)
+        resolved = client.get('/users/'+userId+'/favorites', limit=200)
     else:
         resolved = client.get('/resolve', url=artist_url, limit=200)
 
