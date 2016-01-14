@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import argparse
 import demjson
+import json
 import re
 import requests
 import soundcloud
@@ -16,6 +17,12 @@ from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
 from os.path import exists, join
 from os import mkdir
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
 
 ####################################################################
 
@@ -99,16 +106,26 @@ def process_soundcloud(vargs):
             if vargs['likes'] or 'likes' in artist_url.lower():
                 likes = True     
     if 'likes' in artist_url.lower(): 
+        likes = True
         artist_url = artist_url[0:artist_url.find('/likes')]
 
     if one_track:
         resolved = client.get('/resolve', url=track_url, limit=200)
     elif likes:
         userId = str(client.get('/resolve', url=artist_url).id)
-        resolved = client.get('/users/'+userId+'/favorites', limit=200)
+        resolved = client.get('/users/'+userId+'/favorites', limit=200, linked_partitioning=1)
+        next_href = False
+        if(hasattr(resolved, 'next_href')): next_href = resolved.next_href
+        while (next_href):  
+            response = urlopen(next_href)          
+            resolved2 = json.loads(response.read())
+            if('next_href' in resolved2): next_href = resolved2['next_href']
+            else: next_href = False
+            resolved2 = soundcloud.resource.ResourceList(resolved2['collection']) 
+            resolved.collection.extend(resolved2)
+        resolved=resolved.collection
     else:
         resolved = client.get('/resolve', url=artist_url, limit=200)
-
     # This is is likely a 'likes' page.
     if not hasattr(resolved, 'kind'):
         tracks = resolved
