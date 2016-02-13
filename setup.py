@@ -1,6 +1,15 @@
 import os
+import setuptools
 import sys
+
 from setuptools import setup
+
+# To support 2/3 installation
+setup_version = int(setuptools.__version__.split('.')[0])
+if setup_version < 18:
+    print("Please upgrade your setuptools to install SoundScrape: ")
+    print("pip install -U pip wheel setuptools")
+    quit()
 
 # Set external files
 try:
@@ -8,7 +17,6 @@ try:
     README = convert('README.md', 'rst')	 
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
@@ -19,14 +27,17 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 # Not happy about this..
 # Should work for pip and pip3.
 # Hopefully, mutagen will just publish the patch to pip and we can nuke this..
-pip_version = sys.argv[0]
-if 'pip' not in pip_version:
-    pip_version = 'pip'
-os.system(pip_version + ' install https://bitbucket.org/lazka/mutagen/get/default.tar.gz') 
+pkgs = lambda : list(__import__('pkg_resources').working_set)
+pkg_names = lambda : [x.project_name for x in pkgs()]
+if 'mutagen' not in pkg_names():
+    pip_version = sys.argv[0]
+    if 'pip' not in pip_version:
+        pip_version = 'pip'
+    os.system(pip_version + ' install https://bitbucket.org/lazka/mutagen/get/default.tar.gz')
 
 setup(
     name='soundscrape',
-    version='0.23.5',
+    version='0.23.6',
     packages=['soundscrape'],
     install_requires=required,
     extras_require={ ':python_version < "3.0"': [ 'wsgiref>=0.1.2', ], },    
