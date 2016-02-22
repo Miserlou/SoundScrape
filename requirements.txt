@@ -8,3 +8,4 @@ setuptools>=18.0.0
 simplejson>=3.3.1
 soundcloud>=0.4.1
 wheel>=0.24.0
+mutagen>=1.31.0
