@@ -24,17 +24,6 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-# Not happy about this..
-# Should work for pip and pip3.
-# Hopefully, mutagen will just publish the patch to pip and we can nuke this..
-pkgs = lambda : list(__import__('pkg_resources').working_set)
-pkg_names = lambda : [x.project_name for x in pkgs()]
-if 'mutagen' not in pkg_names():
-    pip_version = sys.argv[0]
-    if 'pip' not in pip_version:
-        pip_version = 'pip'
-    os.system(pip_version + ' install https://bitbucket.org/lazka/mutagen/get/default.tar.gz')
-
 setup(
     name='soundscrape',
     version='0.23.7',
