@@ -120,7 +120,7 @@ def process_soundcloud(vargs):
         streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
         response = requests.get(streams_url).json()
         track_url = response['http_mp3_128_url']
-        download_file(track_url, item_id + '.mp3')
+        filenames = [].append(download_file(track_url, item_id + '.mp3'))
     else:
         # This is is likely a 'likes' page.
         if not hasattr(resolved, 'kind'):
