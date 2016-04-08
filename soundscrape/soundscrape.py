@@ -24,6 +24,9 @@ CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
 CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
+AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
+APP_VERSION = '1460030896'
+
 ####################################################################
 
 def main():
@@ -101,45 +104,54 @@ def process_soundcloud(vargs):
     if 'likes' in artist_url.lower(): 
         artist_url = artist_url[0:artist_url.find('/likes')]
 
-    if one_track:
-        resolved = client.get('/resolve', url=track_url, limit=200)
-    elif likes:
-        userId = str(client.get('/resolve', url=artist_url).id)
-        resolved = client.get('/users/'+userId+'/favorites', limit=200)
-    else:
-        resolved = client.get('/resolve', url=artist_url, limit=200)
-
-    # This is is likely a 'likes' page.
-    if not hasattr(resolved, 'kind'):
-        tracks = resolved
-    else:
-        if resolved.kind == 'artist':
-            artist = resolved
-            artist_id = str(artist.id)
-            tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
-        elif resolved.kind == 'playlist':
-            tracks = resolved.tracks
-            id3_extras['album'] = resolved.title
-        elif resolved.kind == 'track':
-            tracks = [resolved]
-        elif resolved.kind == 'group':
-            group = resolved
-            group_id = str(group.id)
-            tracks = client.get('/groups/' + group_id + '/tracks', limit=200)
+    try:
+        if one_track:
+            resolved = client.get('/resolve', url=track_url, limit=200)
+        elif likes:
+            userId = str(client.get('/resolve', url=artist_url).id)
+            resolved = client.get('/users/'+userId+'/favorites', limit=200)
         else:
-            artist = resolved
-            artist_id = str(artist.id)
-            tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
-
-    if one_track:
-        num_tracks = 1
+            resolved = client.get('/resolve', url=artist_url, limit=200)
+    except Exception as e:
+        # SoundScrape is trying to prevent us from downloading this.
+        # We're going to have to stop trusting the API/client and 
+        # do all our own scraping. Boo.
+        item_id = e.message.rsplit('/', 1)[-1].split('.json')[0]
+        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+        response = requests.get(streams_url).json()
+        track_url = response['http_mp3_128_url']
+        download_file(track_url, item_id + '.mp3')
     else:
-        num_tracks = vargs['num_tracks']
-    filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
+        # This is is likely a 'likes' page.
+        if not hasattr(resolved, 'kind'):
+            tracks = resolved
+        else:
+            if resolved.kind == 'artist':
+                artist = resolved
+                artist_id = str(artist.id)
+                tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
+            elif resolved.kind == 'playlist':
+                tracks = resolved.tracks
+                id3_extras['album'] = resolved.title
+            elif resolved.kind == 'track':
+                tracks = [resolved]
+            elif resolved.kind == 'group':
+                group = resolved
+                group_id = str(group.id)
+                tracks = client.get('/groups/' + group_id + '/tracks', limit=200)
+            else:
+                artist = resolved
+                artist_id = str(artist.id)
+                tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
 
-    if vargs['open']:
-        open_files(filenames)
+        if one_track:
+            num_tracks = 1
+        else:
+            num_tracks = vargs['num_tracks']
+        filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
 
+        if vargs['open']:
+            open_files(filenames)
 
 def get_client():
     """
