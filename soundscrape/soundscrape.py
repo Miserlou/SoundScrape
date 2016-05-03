@@ -195,10 +195,14 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                         t_track['stream_url'] = track.stream_url
                     else:
                         t_track['direct'] = True
-                        t_track['stream_url'] = 'https://api.soundcloud.com/tracks/' + track.id + '/stream?client_id=' + MAGIC_CLIENT_ID
+                        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (str(track.id), AGGRESSIVE_CLIENT_ID, APP_VERSION)
+                        response = requests.get(streams_url).json()
+                        t_track['stream_url'] = response['http_mp3_128_url']
+
                 track = t_track
             except Exception as e:
                 puts(colored.white(track.title) + colored.red(' is not downloadable.'))
+                print(e)
                 continue
 
         if i > num_tracks - 1:
@@ -637,13 +641,14 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
     Attempt to put ID3 tags on a file.
 
     """
+
     try:
         audio = EasyMP3(filename)
         audio.tags = None
         audio["artist"] = artist
         audio["title"] = title
         if year:
-            audio["date"] = str(year)
+            audio["date"] = str(year.encode('ascii','ignore'))
         if album:
             audio["album"] = album
         if track_number:
