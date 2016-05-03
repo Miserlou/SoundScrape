@@ -127,7 +127,7 @@ soundscrape https://www.mixcloud.com/corenewsuploads/flume-essential-mix-2015-10
 Audiomack
 --------
 
-Just for fun, SoundCloud can also download individual songs from Audiomack. Not that you'd ever want to.
+Just for fun, SoundScrape can also download individual songs from Audiomack. Not that you'd ever want to.
 
 ```bash
 soundscrape -a http://www.audiomack.com/song/bottomfeedermusic/top-shottas
