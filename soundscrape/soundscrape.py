@@ -12,7 +12,7 @@ from clint.textui import colored, puts, progress
 from datetime import datetime
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
-from mutagen.id3 import ID3 as OldID3
+from mutagen.id3 import ID3 as OldID3a
 from subprocess import Popen, PIPE
 from os.path import exists, join
 from os import mkdir
@@ -25,7 +25,7 @@ CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
-APP_VERSION = '1460030896'
+APP_VERSION = '1462548687'
 
 ####################################################################
 
@@ -107,19 +107,23 @@ def process_soundcloud(vargs):
     try:
         if one_track:
             resolved = client.get('/resolve', url=track_url, limit=200)
+
         elif likes:
             userId = str(client.get('/resolve', url=artist_url).id)
             resolved = client.get('/users/'+userId+'/favorites', limit=200)
         else:
             resolved = client.get('/resolve', url=artist_url, limit=200)
+
     except Exception as e:
         # SoundScrape is trying to prevent us from downloading this.
         # We're going to have to stop trusting the API/client and 
         # do all our own scraping. Boo.
-        item_id = e.message.rsplit('/', 1)[-1].split('.json')[0]
-        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
-        response = requests.get(streams_url).json()
-        track_url = response['http_mp3_128_url']
+        item_id = e.message.rsplit('/', 1)[-1].split('.json')[0].split('?client_id')[0]
+        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+        response = requests.get(streams_url)
+        json_response = response.json()
+
+        track_url = json_response['http_mp3_128_url']
         filenames = [].append(download_file(track_url, item_id + '.mp3'))
     else:
         # This is is likely a 'likes' page.
@@ -143,6 +147,10 @@ def process_soundcloud(vargs):
                 artist = resolved
                 artist_id = str(artist.id)
                 tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
+                if tracks == [] and artist.track_count > 0:
+                    # We have a problem. Thanks, SoundCloud.
+                    import pdb
+                    pdb.set_trace()
 
         if one_track:
             num_tracks = 1
