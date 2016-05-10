@@ -34,7 +34,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/bxsswxrshp/astronauts-etc-sadie-x-wxrhp-remix'}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/fzpz/revised'}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
