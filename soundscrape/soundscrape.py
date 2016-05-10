@@ -20,8 +20,8 @@ from os import mkdir
 ####################################################################
 
 # Please be nice with this!
-CLIENT_ID = '22e566527758690e6feb2b5cb300cc43'
-CLIENT_SECRET = '3a7815c3f9a82c3448ee4e7d3aa484a4'
+CLIENT_ID = '175c043157ffae2c6d5fed16c3d95a4c'
+CLIENT_SECRET = '99a51990bd81b6a82c901d4cc6828e46'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
