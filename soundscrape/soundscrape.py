@@ -49,6 +49,8 @@ def main():
                         help='Use if downloading from Mixcloud rather than SoundCloud')
     parser.add_argument('-a', '--audiomack', action='store_true',
                         help='Use if downloading from Audiomack rather than SoundCloud')
+    parser.add_argument('-c', '--hive', action='store_true',
+                        help='Use if downloading from Hive.co rather than SoundCloud')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
     parser.add_argument('-d', '--downloadable', action='store_true',
@@ -73,6 +75,8 @@ def main():
         process_mixcloud(vargs)
     elif 'audiomack.com' in artist_url or vargs['audiomack']:
         process_audiomack(vargs)
+    elif 'hive.co' in artist_url or vargs['hive']:
+        process_hive(vargs)
     else:
         process_soundcloud(vargs)
 
@@ -617,6 +621,98 @@ def get_audiomack_data(url):
     data['artist'] = artist
     data['artwork_url'] = artwork_url
     data['year'] = None
+
+    return data
+
+####################################################################
+# Hive.co
+####################################################################
+
+def process_hive(vargs):
+    """
+    Main Hive.co path.
+    """
+
+    artist_url = vargs['artist_url']
+
+    if 'hive.co' in artist_url:
+        mc_url = artist_url
+    else:
+        mc_url = 'https://www.hive.co/downloads/download/' + artist_url
+
+    filenames = scrape_hive_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+
+    if vargs['open']:
+        open_files(filenames)
+
+    return
+
+def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
+    """
+
+    Scrape a Hive.co download page.
+
+    Returns filenames to open.
+
+    """
+
+    try:
+        data = get_hive_data(mc_url)
+    except Exception as e:
+        puts(colored.red("Problem downloading ") + mc_url)
+        print(e)
+
+    filenames = []
+
+    # track_artist = sanitize_filename(data['artist'])
+    # track_title = sanitize_filename(data['title'])
+    # track_filename = track_artist + ' - ' + track_title + '.mp3'
+
+    # if folders:
+    #     if not exists(track_artist):
+    #         mkdir(track_artist)
+    #     track_filename = join(track_artist, track_filename)
+    #     if exists(track_filename):
+    #         puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
+    #         return []
+
+    # puts(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
+    # download_file(data['mp3_url'], track_filename)
+    # tag_file(track_filename,
+    #         artist=data['artist'],
+    #         title=data['title'],
+    #         year=data['year'],
+    #         genre=None,
+    #         artwork_url=data['artwork_url'])
+    # filenames.append(track_filename)
+
+    return filenames
+
+def get_hive_data(url):
+    """
+
+    Scrapes a Mixcloud page for a track's important information.
+
+    Returns a dict of data.
+
+    """
+
+    data = {}
+    request = requests.get(url)
+
+    import pdb
+    pdb.set_trace()
+
+    # mp3_url = request.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
+    # artist = request.text.split('<span class="artist">')[1].split('</span>')[0].strip()
+    # title = request.text.split('<span class="artist">')[1].split('</span>')[1].split('</h1>')[0].strip()
+    # artwork_url = request.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
+
+    # data['mp3_url'] = mp3_url
+    # data['title'] = title
+    # data['artist'] = artist
+    # data['artwork_url'] = artwork_url
+    # data['year'] = None
 
     return data
 
