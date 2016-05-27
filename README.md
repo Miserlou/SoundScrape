@@ -14,6 +14,12 @@ First, install it:
 pip install soundscrape
 ```
 
+Note that if you are having problems, please first try updating to the latest version:
+
+```bash
+pip install soundscrape --upgrade
+```
+
 Then, just call soundscrape and the name of the artist you want to scrape:
 
 ```bash
