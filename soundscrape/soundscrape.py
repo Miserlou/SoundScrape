@@ -118,17 +118,33 @@ def process_soundcloud(vargs):
         else:
             resolved = client.get('/resolve', url=artist_url, limit=200)
 
-    except Exception as e:
+    except Exception as e: # HTTPError?
+
         # SoundScrape is trying to prevent us from downloading this.
         # We're going to have to stop trusting the API/client and 
         # do all our own scraping. Boo.
+
         item_id = e.message.rsplit('/', 1)[-1].split('.json')[0].split('?client_id')[0]
         streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
         response = requests.get(streams_url)
         json_response = response.json()
 
-        track_url = json_response['http_mp3_128_url']
-        filenames = [].append(download_file(track_url, item_id + '.mp3'))
+        track_data = get_soundcloud_data(artist_url)
+        puts(colored.green("Scraping") + colored.white(": " + track_data['title']))
+
+        filenames = []
+        hard_track_url = json_response['http_mp3_128_url']
+        filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
+        filename = download_file(hard_track_url, filename)
+        tag_file(filename,
+                artist=track_data['artist'],
+                title=track_data['title'],
+                year='2016',
+                genre='',
+                album='',
+                artwork_url='')
+        filenames.append(filename)
+
     else:
         # This is is likely a 'likes' page.
         if not hasattr(resolved, 'kind'):
@@ -161,8 +177,8 @@ def process_soundcloud(vargs):
             num_tracks = vargs['num_tracks']
         filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
 
-        if vargs['open']:
-            open_files(filenames)
+    if vargs['open']:
+        open_files(filenames)
 
 def get_client():
     """
@@ -260,6 +276,26 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
             print(e)
 
     return filenames
+
+def get_soundcloud_data(url):
+    """
+
+    Scrapes a SoundCloud page for a track's important information.
+
+    Returns a dict of data.
+
+    """
+
+    data = {}
+
+    request = requests.get(url)
+    title_tag = request.text.split('<title>')[1].split('</title')[0]
+    data['title'] = title_tag.split(' by ')[0].strip()
+    data['artist']  = title_tag.split(' by ')[1].split('|')[0].strip()
+    # XXX Do more..
+
+    return data
+
 
 ####################################################################
 # Bandcamp
@@ -700,8 +736,8 @@ def get_hive_data(url):
     data = {}
     request = requests.get(url)
 
-    import pdb
-    pdb.set_trace()
+    # import pdb
+    # pdb.set_trace()
 
     # mp3_url = request.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
     # artist = request.text.split('<span class="artist">')[1].split('</span>')[0].strip()
