@@ -888,6 +888,9 @@ def sanitize_filename(filename):
     Make sure filenames are valid paths.
     """
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
+    sanitized_filename = sanitized_filename.replace('&', 'and')
+    sanitized_filename = sanitized_filename.replace('"', '')
+    sanitized_filename = sanitized_filename.replace("'", '')
     return sanitized_filename
 
 ####################################################################
