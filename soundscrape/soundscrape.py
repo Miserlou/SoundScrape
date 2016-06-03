@@ -124,7 +124,8 @@ def process_soundcloud(vargs):
         # We're going to have to stop trusting the API/client and 
         # do all our own scraping. Boo.
 
-        item_id = e.message.rsplit('/', 1)[-1].split('.json')[0].split('?client_id')[0]
+        message = str(e)
+        item_id = message.rsplit('/', 1)[-1].split('.json')[0].split('?client_id')[0]
         hard_track_url = get_hard_track_url(item_id)
 
         track_data = get_soundcloud_data(artist_url)
