@@ -25,7 +25,7 @@ CLIENT_SECRET = '99a51990bd81b6a82c901d4cc6828e46'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
-APP_VERSION = '1462548687'
+APP_VERSION = '1464790339'
 
 ####################################################################
 
@@ -125,15 +125,12 @@ def process_soundcloud(vargs):
         # do all our own scraping. Boo.
 
         item_id = e.message.rsplit('/', 1)[-1].split('.json')[0].split('?client_id')[0]
-        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
-        response = requests.get(streams_url)
-        json_response = response.json()
+        hard_track_url = get_hard_track_url(item_id)
 
         track_data = get_soundcloud_data(artist_url)
         puts(colored.green("Scraping") + colored.white(": " + track_data['title']))
 
         filenames = []
-        hard_track_url = json_response['http_mp3_128_url']
         filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
         filename = download_file(hard_track_url, filename)
         tag_file(filename,
@@ -143,9 +140,12 @@ def process_soundcloud(vargs):
                 genre='',
                 album='',
                 artwork_url='')
+
         filenames.append(filename)
 
     else:
+        aggressive = False
+
         # This is is likely a 'likes' page.
         if not hasattr(resolved, 'kind'):
             tracks = resolved
@@ -168,14 +168,34 @@ def process_soundcloud(vargs):
                 artist_id = str(artist.id)
                 tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
                 if tracks == [] and artist.track_count > 0:
-                    # We have a problem. Thanks, SoundCloud.
-                    print("This feature is still under development.")
+                    aggressive = True
+                    filenames = []
+
+                    data = get_soundcloud_api2_data(artist_id)
+
+                    for track in data['collection']:
+                        track = track['track']
+                        hard_track_url = get_hard_track_url(track['id'])
+                        puts(colored.green("Scraping") + colored.white(": " + track['title']))
+
+                        filename = sanitize_filename(track['user']['full_name'] + ' - ' + track['title'] + '.mp3')
+                        filename = download_file(hard_track_url, filename)
+                        tag_file(filename,
+                                artist=track['user']['full_name'],
+                                title=track['title'],
+                                year=track['created_at'][:4],
+                                genre=track['genre'],
+                                album='',
+                                artwork_url=track['artwork_url'])
+
+                        filenames.append(filename)
 
         if one_track:
             num_tracks = 1
         else:
             num_tracks = vargs['num_tracks']
-        filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
+        if not aggressive:
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
 
     if vargs['open']:
         open_files(filenames)
@@ -289,6 +309,7 @@ def get_soundcloud_data(url):
     data = {}
 
     request = requests.get(url)
+
     title_tag = request.text.split('<title>')[1].split('</title')[0]
     data['title'] = title_tag.split(' by ')[0].strip()
     data['artist']  = title_tag.split(' by ')[1].split('|')[0].strip()
@@ -296,6 +317,28 @@ def get_soundcloud_data(url):
 
     return data
 
+def get_soundcloud_api2_data(artist_id):
+    """
+    Scrape the new API. Returns the parsed JSON response.
+    """
+
+    v2_url = "https://api-v2.soundcloud.com/stream/users/%s?limit=500&client_id=%s&app_version=%s" % (artist_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+    response = requests.get(v2_url)
+    parsed = response.json()
+
+    return parsed
+
+def get_hard_track_url(item_id):
+    """
+    Hard-scrapes a track.
+    """
+
+    streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+    response = requests.get(streams_url)
+    json_response = response.json()
+    hard_track_url = json_response['http_mp3_128_url']
+
+    return hard_track_url
 
 ####################################################################
 # Bandcamp
