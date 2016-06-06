@@ -831,7 +831,7 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
         audio["artist"] = artist
         audio["title"] = title
         if year:
-            audio["date"] = str(year.encode('ascii','ignore'))
+            audio["date"] = str(str(year).encode('ascii','ignore'))
         if album:
             audio["album"] = album
         if track_number:
