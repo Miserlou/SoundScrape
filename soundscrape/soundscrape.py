@@ -27,7 +27,9 @@ MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
 APP_VERSION = '1464790339'
 
+
 ####################################################################
+
 
 def main():
     """
@@ -38,7 +40,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
-                   help='An artist\'s SoundCloud username or URL')
+                        help='An artist\'s SoundCloud username or URL')
     parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxsize,
                         help='The number of tracks to download')
     parser.add_argument('-g', '--group', action='store_true',
@@ -80,9 +82,11 @@ def main():
     else:
         process_soundcloud(vargs)
 
+
 ####################################################################
 # SoundCloud
 ####################################################################
+
 
 def process_soundcloud(vargs):
     """
@@ -104,8 +108,8 @@ def process_soundcloud(vargs):
         else:
             artist_url = 'https://soundcloud.com/' + artist_url.lower()
             if vargs['likes'] or 'likes' in artist_url.lower():
-                likes = True     
-    if 'likes' in artist_url.lower(): 
+                likes = True
+    if 'likes' in artist_url.lower():
         artist_url = artist_url[0:artist_url.find('/likes')]
 
     try:
@@ -114,11 +118,11 @@ def process_soundcloud(vargs):
 
         elif likes:
             userId = str(client.get('/resolve', url=artist_url).id)
-            resolved = client.get('/users/'+userId+'/favorites', limit=200)
+            resolved = client.get('/users/' + userId + '/favorites', limit=200)
         else:
             resolved = client.get('/resolve', url=artist_url, limit=200)
 
-    except Exception as e: # HTTPError?
+    except Exception as e:  # HTTPError?
 
         # SoundScrape is trying to prevent us from downloading this.
         # We're going to have to stop trusting the API/client and 
@@ -135,12 +139,12 @@ def process_soundcloud(vargs):
         filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
         filename = download_file(hard_track_url, filename)
         tag_file(filename,
-                artist=track_data['artist'],
-                title=track_data['title'],
-                year='2016',
-                genre='',
-                album='',
-                artwork_url='')
+                 artist=track_data['artist'],
+                 title=track_data['title'],
+                 year='2016',
+                 genre='',
+                 album='',
+                 artwork_url='')
 
         filenames.append(filename)
 
@@ -182,12 +186,12 @@ def process_soundcloud(vargs):
                         filename = sanitize_filename(track['user']['full_name'] + ' - ' + track['title'] + '.mp3')
                         filename = download_file(hard_track_url, filename)
                         tag_file(filename,
-                                artist=track['user']['full_name'],
-                                title=track['title'],
-                                year=track['created_at'][:4],
-                                genre=track['genre'],
-                                album='',
-                                artwork_url=track['artwork_url'])
+                                 artist=track['user']['full_name'],
+                                 title=track['title'],
+                                 year=track['created_at'][:4],
+                                 genre=track['genre'],
+                                 album='',
+                                 artwork_url=track['artwork_url'])
 
                         filenames.append(filename)
 
@@ -196,10 +200,12 @@ def process_soundcloud(vargs):
         else:
             num_tracks = vargs['num_tracks']
         if not aggressive:
-            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], id3_extras=id3_extras)
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'],
+                                        id3_extras=id3_extras)
 
     if vargs['open']:
         open_files(filenames)
+
 
 def get_client():
     """
@@ -243,7 +249,8 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                         t_track['stream_url'] = track.stream_url
                     else:
                         t_track['direct'] = True
-                        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (str(track.id), AGGRESSIVE_CLIENT_ID, APP_VERSION)
+                        streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams?client_id=%s&app_version=%s" % (
+                        str(track.id), AGGRESSIVE_CLIENT_ID, APP_VERSION)
                         response = requests.get(streams_url).json()
                         t_track['stream_url'] = response['http_mp3_128_url']
 
@@ -285,12 +292,12 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
 
                 path = download_file(location, track_filename)
                 tag_file(path,
-                        artist=track['user']['username'],
-                        title=track['title'],
-                        year=track['release_year'],
-                        genre=track['genre'],
-                        album=id3_extras.get('album', None),
-                        artwork_url=track['artwork_url'])
+                         artist=track['user']['username'],
+                         title=track['title'],
+                         year=track['release_year'],
+                         genre=track['genre'],
+                         album=id3_extras.get('album', None),
+                         artwork_url=track['artwork_url'])
                 filenames.append(path)
         except Exception as e:
             puts(colored.red("Problem downloading ") + colored.white(track['title']))
@@ -298,12 +305,13 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
 
     return filenames
 
+
 def get_soundcloud_data(url):
     """
-
     Scrapes a SoundCloud page for a track's important information.
 
-    Returns a dict of data.
+    Returns:
+        dict: of audio data
 
     """
 
@@ -313,37 +321,43 @@ def get_soundcloud_data(url):
 
     title_tag = request.text.split('<title>')[1].split('</title')[0]
     data['title'] = title_tag.split(' by ')[0].strip()
-    data['artist']  = title_tag.split(' by ')[1].split('|')[0].strip()
+    data['artist'] = title_tag.split(' by ')[1].split('|')[0].strip()
     # XXX Do more..
 
     return data
+
 
 def get_soundcloud_api2_data(artist_id):
     """
     Scrape the new API. Returns the parsed JSON response.
     """
 
-    v2_url = "https://api-v2.soundcloud.com/stream/users/%s?limit=500&client_id=%s&app_version=%s" % (artist_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+    v2_url = "https://api-v2.soundcloud.com/stream/users/%s?limit=500&client_id=%s&app_version=%s" % (
+    artist_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
     response = requests.get(v2_url)
     parsed = response.json()
 
     return parsed
+
 
 def get_hard_track_url(item_id):
     """
     Hard-scrapes a track.
     """
 
-    streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
+    streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (
+    item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
     response = requests.get(streams_url)
     json_response = response.json()
     hard_track_url = json_response['http_mp3_128_url']
 
     return hard_track_url
 
+
 ####################################################################
 # Bandcamp
 ####################################################################
+
 
 def process_bandcamp(vargs):
     """
@@ -380,6 +394,9 @@ def process_bandcamp(vargs):
 def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
     """
     Pull out artist and track info from a Bandcamp URL.
+
+    Returns:
+        list: filenames to open
     """
 
     filenames = []
@@ -440,13 +457,13 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
                 album_year = datetime.strptime(album_year, "%d %b %Y %H:%M:%S GMT").year
 
             tag_file(path,
-                    artist,
-                    track_name,
-                    album=album_name,
-                    year=album_year,
-                    genre=album_data['genre'],
-                    artwork_url=album_data['artFullsizeUrl'],
-                    track_number=track_number)
+                     artist,
+                     track_name,
+                     album=album_name,
+                     year=album_year,
+                     genre=album_data['genre'],
+                     artwork_url=album_data['artFullsizeUrl'],
+                     track_number=track_number)
 
             filenames.append(path)
 
@@ -499,9 +516,11 @@ def get_bandcamp_metadata(url):
         output['album_name'] = match.group(1)
     return output
 
+
 ####################################################################
 # Mixcloud
 ####################################################################
+
 
 def process_mixcloud(vargs):
     """
@@ -525,8 +544,8 @@ def process_mixcloud(vargs):
 
 def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
     """
-
-    Returns filenames to open.
+    Returns:
+        list: filenames to open
 
     """
 
@@ -548,18 +567,19 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
             mkdir(track_artist)
         track_filename = join(track_artist, track_filename)
         if exists(track_filename):
-            puts(colored.yellow("Skipping") + colored.white( ': ' + data['title'] + " - it already exists!"))
+            puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
 
-    puts(colored.green("Downloading") + colored.white(': ' +  data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")"))
+    puts(colored.green("Downloading") + colored.white(
+        ': ' + data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")"))
     download_file(data['mp3_url'], track_filename)
     if track_filename[-4:] == '.mp3':
         tag_file(track_filename,
-                artist=data['artist'],
-                title=data['title'],
-                year=data['year'],
-                genre="Mix",
-                artwork_url=data['artwork_url'])
+                 artist=data['artist'],
+                 title=data['title'],
+                 year=data['year'],
+                 genre="Mix",
+                 artwork_url=data['artwork_url'])
     filenames.append(track_filename)
 
     return filenames
@@ -567,10 +587,10 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
 
 def get_mixcloud_data(url):
     """
-
     Scrapes a Mixcloud page for a track's important information.
 
-    Returns a dict of data.
+    Returns:
+        dict: containing audio data
 
     """
 
@@ -579,13 +599,15 @@ def get_mixcloud_data(url):
     waveform_server = "https://waveform.mixcloud.com"
 
     waveform_url = request.text.split('m-waveform="')[1].split('"')[0]
-    stream_server = request.text.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
+    stream_server = \
+    request.text.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
 
     # Iterate to fish for the original mp3 stream..
     stream_server = "https://stream"
     m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
     for server in range(14, 23):
-        m4a_url = waveform_url.replace(waveform_server, stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+        m4a_url = waveform_url.replace(waveform_server,
+                                       stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
         if requests.head(mp3_url).status_code == 200:
             break
@@ -594,9 +616,12 @@ def get_mixcloud_data(url):
 
     # .. else fallback to an m4a.
     if not mp3_url:
-        m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+        m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json',
+                                                                                                           '.m4a')
         for server in range(14, 23):
-            mp3_url = waveform_url.replace(waveform_server, stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+            mp3_url = waveform_url.replace(waveform_server,
+                                           stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json',
+                                                                                                            '.m4a')
             if requests.head(mp3_url).status_code == 200:
                 break
 
@@ -605,7 +630,8 @@ def get_mixcloud_data(url):
     artist = full_title.split(' by ')[1].strip()
 
     img_thumbnail_url = request.text.split('m-thumbnail-url="')[1].split(" ng-class")[0]
-    artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"', '')
+    artwork_url = img_thumbnail_url.replace('60/', '300/').replace('60/', '300/').replace('//', 'https://').replace('"',
+                                                                                                                    '')
 
     data['mp3_url'] = mp3_url
     data['title'] = title
@@ -615,9 +641,11 @@ def get_mixcloud_data(url):
 
     return data
 
+
 ####################################################################
 # Audiomack
 ####################################################################
+
 
 def process_audiomack(vargs):
     """
@@ -641,8 +669,8 @@ def process_audiomack(vargs):
 
 def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
     """
-
-    Returns filenames to open.
+    Returns:
+        list: filenames to open
 
     """
 
@@ -669,11 +697,11 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
     puts(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
     download_file(data['mp3_url'], track_filename)
     tag_file(track_filename,
-            artist=data['artist'],
-            title=data['title'],
-            year=data['year'],
-            genre=None,
-            artwork_url=data['artwork_url'])
+             artist=data['artist'],
+             title=data['title'],
+             year=data['year'],
+             genre=None,
+             artwork_url=data['artwork_url'])
     filenames.append(track_filename)
 
     return filenames
@@ -681,10 +709,10 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
 
 def get_audiomack_data(url):
     """
-
     Scrapes a Mixcloud page for a track's important information.
 
-    Returns a dict of data.
+    Returns:
+        dict: containing audio data
 
     """
 
@@ -704,9 +732,11 @@ def get_audiomack_data(url):
 
     return data
 
+
 ####################################################################
 # Hive.co
 ####################################################################
+
 
 def process_hive(vargs):
     """
@@ -727,12 +757,13 @@ def process_hive(vargs):
 
     return
 
+
 def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
     """
-
     Scrape a Hive.co download page.
 
-    Returns filenames to open.
+    Returns:
+        list: filenames to open
 
     """
 
@@ -768,6 +799,7 @@ def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
 
     return filenames
 
+
 def get_hive_data(url):
     """
 
@@ -796,9 +828,11 @@ def get_hive_data(url):
 
     return data
 
+
 ####################################################################
 # File Utility
 ####################################################################
+
 
 def download_file(url, path):
     """
@@ -823,6 +857,15 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
     """
     Attempt to put ID3 tags on a file.
 
+    Args:
+        artist (str):
+        title (str):
+        year (int):
+        genre (str):
+        artwork_url (str):
+        album (str):
+        track_number (str):
+        filename (str):
     """
 
     try:
@@ -887,12 +930,16 @@ def open_files(filenames):
 def sanitize_filename(filename):
     """
     Make sure filenames are valid paths.
+
+    Returns:
+        str: 
     """
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
     sanitized_filename = sanitized_filename.replace('&', 'and')
     sanitized_filename = sanitized_filename.replace('"', '')
     sanitized_filename = sanitized_filename.replace("'", '')
     return sanitized_filename
+
 
 ####################################################################
 # Main
