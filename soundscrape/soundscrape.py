@@ -178,22 +178,55 @@ def process_soundcloud(vargs):
 
                     data = get_soundcloud_api2_data(artist_id)
 
-                    for track in data['collection']:
-                        track = track['track']
+                    def download_track(track):
+    
                         hard_track_url = get_hard_track_url(track['id'])
-                        puts(colored.green("Scraping") + colored.white(": " + track['title']))
 
-                        filename = sanitize_filename(track['user']['full_name'] + ' - ' + track['title'] + '.mp3')
+                        # We have no info on this track whatsoever.
+                        if not 'title' in track:
+                            return None
+
+                        # May not have a "full name"
+                        name = track['user']['full_name']
+                        if name == '':
+                            name = track['user']['username']
+
+                        filename = sanitize_filename(name + ' - ' + track['title'] + '.mp3')
+
+                        # Skip already downloaded track.
+                        if filename in filenames:
+                            return None
+
+                        if hard_track_url:
+                            puts(colored.green("Scraping") + colored.white(": " + track['title']))
+                        else:
+                            # Region coded?
+                            puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
+                            return None
+
                         filename = download_file(hard_track_url, filename)
                         tag_file(filename,
-                                 artist=track['user']['full_name'],
+                                 artist=name,
                                  title=track['title'],
                                  year=track['created_at'][:4],
                                  genre=track['genre'],
                                  album='',
                                  artwork_url=track['artwork_url'])
 
-                        filenames.append(filename)
+                        return filename
+
+                    for track in data['collection']:
+
+                        if track['type'] == 'playlist':
+                            for playlist_track in track['playlist']['tracks']:
+                                filename = download_track(playlist_track)
+                                if filename:
+                                    filenames.append(filename)
+                        else:
+                            d_track = track['track']
+                            filename = download_track(d_track)
+                            if filename:
+                                filenames.append(filename)
 
         if one_track:
             num_tracks = 1
@@ -349,10 +382,12 @@ def get_hard_track_url(item_id):
     item_id, AGGRESSIVE_CLIENT_ID, APP_VERSION)
     response = requests.get(streams_url)
     json_response = response.json()
-    hard_track_url = json_response['http_mp3_128_url']
 
-    return hard_track_url
-
+    if response.status_code == 200:
+        hard_track_url = json_response['http_mp3_128_url']
+        return hard_track_url
+    else:
+        return None
 
 ####################################################################
 # Bandcamp
