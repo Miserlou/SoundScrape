@@ -178,7 +178,7 @@ def process_soundcloud(vargs):
 
                     data = get_soundcloud_api2_data(artist_id)
 
-                    def download_track(track):
+                    def download_track(track, album_name=u''):
     
                         hard_track_url = get_hard_track_url(track['id'])
 
@@ -204,13 +204,16 @@ def process_soundcloud(vargs):
                             puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
                             return None
 
+                        import pdb
+                        pdb.set_trace()
+
                         filename = download_file(hard_track_url, filename)
                         tag_file(filename,
                                  artist=name,
                                  title=track['title'],
                                  year=track['created_at'][:4],
                                  genre=track['genre'],
-                                 album='',
+                                 album=album_name,
                                  artwork_url=track['artwork_url'])
 
                         return filename
@@ -219,7 +222,8 @@ def process_soundcloud(vargs):
 
                         if track['type'] == 'playlist':
                             for playlist_track in track['playlist']['tracks']:
-                                filename = download_track(playlist_track)
+                                album_name = track['playlist']['title']
+                                filename = download_track(playlist_track, album_name)
                                 if filename:
                                     filenames.append(filename)
                         else:
