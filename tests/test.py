@@ -42,6 +42,19 @@ class TestSoundscrape(unittest.TestCase):
         for f in glob.glob('*.mp3'):
            os.unlink(f)
 
+    def test_soundcloud_hard(self):
+        for f in glob.glob('*.mp3'):
+           os.unlink(f)
+
+        mp3_count = len(glob.glob1('', "*.mp3"))
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'puptheband'}
+        process_soundcloud(vargs)
+        new_mp3_count = len(glob.glob1('', "*.mp3"))
+        self.assertTrue(new_mp3_count > mp3_count)
+
+        for f in glob.glob('*.mp3'):
+           os.unlink(f)
+
     def test_bandcamp(self):
         for f in glob.glob('*.mp3'):
            os.unlink(f)
