@@ -204,9 +204,6 @@ def process_soundcloud(vargs):
                             puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
                             return None
 
-                        import pdb
-                        pdb.set_trace()
-
                         filename = download_file(hard_track_url, filename)
                         tag_file(filename,
                                  artist=name,
