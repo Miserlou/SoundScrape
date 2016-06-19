@@ -402,7 +402,7 @@ def process_bandcamp(vargs):
 
     artist_url = vargs['artist_url']
 
-    if 'bandcamp.com' in artist_url:
+    if 'bandcamp.com' in artist_url or ('://' in artist_url and vargs['bandcamp']):
         bc_url = artist_url
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
