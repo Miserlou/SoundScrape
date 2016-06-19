@@ -659,6 +659,8 @@ def get_mixcloud_data(url):
                                            stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json',
                                                                                                             '.m4a')
             if requests.head(mp3_url).status_code == 200:
+                if '?' in mp3_url:
+                    mp3_url = mp3_url.split('?')[0]
                 break
 
     full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
