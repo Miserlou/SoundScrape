@@ -117,6 +117,14 @@ Note: Currently, when using the *-n* argument, the limit is evaluated for each a
 soundscrape warsaw -b -f
 ```
 
+This also works for non-Bandcamp URLs that are hosted on Bandcamp:
+
+```bash
+soundscrape -b http://music.monstercat.com/
+```
+
+Note that the full URL must be included.
+
 Mixcloud
 --------
 
