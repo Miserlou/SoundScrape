@@ -63,6 +63,8 @@ def main():
                         help='Organize saved songs in folders by artists')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
+    parser.add_argument('-k', '--keep', action='store_true',
+                        help='Keep 30-second preview tracks')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -95,6 +97,8 @@ def process_soundcloud(vargs):
 
     artist_url = vargs['artist_url']
     track_permalink = vargs['track']
+    keep_previews = vargs['keep']
+
     id3_extras = {}
     one_track = False
     likes = False
@@ -185,6 +189,11 @@ def process_soundcloud(vargs):
                         # We have no info on this track whatsoever.
                         if not 'title' in track:
                             return None
+
+                        if not keep_previews:
+                            if (track.get('duration', 0) < track.get('full_duration', 0)):
+                                puts(colored.yellow("Skipping preview track") + colored.white(": " + track['title']))
+                                return None
 
                         # May not have a "full name"
                         name = track['user']['full_name']
