@@ -94,7 +94,7 @@ soundscrape sly-dogg -d
 Keep Preview Tracks
 --------
 
-By default, SoundScrape will skip the 30-second preview tracks that SoundCloud now provides. You can choose to keep these preview snippes with the *-k* argument.
+By default, SoundScrape will skip the 30-second preview tracks that SoundCloud now provides. You can choose to keep these preview snippets with the *-k* argument.
 
 ```bash
 soundscrape chromeo -k
