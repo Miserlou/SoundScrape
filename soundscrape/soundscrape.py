@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import argparse
 import demjson
+import os
 import re
 import requests
 import soundcloud
@@ -38,6 +39,11 @@ def main():
     Converts arguments to Python and processes accordingly.
 
     """
+
+    # Hack related to #58
+    if sys.platform == "win32": 
+        os.system("chcp 65001");
+
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
     parser.add_argument('artist_url', metavar='U', type=str,
                         help='An artist\'s SoundCloud username or URL')
