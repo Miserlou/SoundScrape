@@ -116,6 +116,11 @@ def process_soundcloud(vargs):
     if 'likes' in artist_url.lower():
         artist_url = artist_url[0:artist_url.find('/likes')]
 
+    if one_track:
+        num_tracks = 1
+    else:
+        num_tracks = vargs['num_tracks']
+
     try:
         if one_track:
             resolved = client.get('/resolve', url=track_url, limit=200)
@@ -226,6 +231,9 @@ def process_soundcloud(vargs):
 
                     for track in data['collection']:
 
+                        if len(filenames) >= num_tracks:
+                            break
+
                         if track['type'] == 'playlist':
                             for playlist_track in track['playlist']['tracks']:
                                 album_name = track['playlist']['title']
@@ -238,10 +246,6 @@ def process_soundcloud(vargs):
                             if filename:
                                 filenames.append(filename)
 
-        if one_track:
-            num_tracks = 1
-        else:
-            num_tracks = vargs['num_tracks']
         if not aggressive:
             filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'],
                                         id3_extras=id3_extras)
