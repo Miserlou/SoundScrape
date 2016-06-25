@@ -98,6 +98,7 @@ def process_soundcloud(vargs):
     artist_url = vargs['artist_url']
     track_permalink = vargs['track']
     keep_previews = vargs['keep']
+    folders = vargs['folders']
 
     id3_extras = {}
     one_track = False
@@ -146,6 +147,17 @@ def process_soundcloud(vargs):
 
         filenames = []
         filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
+
+        if folders:
+            name = track_data['artist']
+            if not exists(name):
+                mkdir(name)
+            filename = join(name, filename)
+
+        if exists(filename) and folders:
+            puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
+            return None
+
         filename = download_file(hard_track_url, filename)
         tag_file(filename,
                  artist=track_data['artist'],
@@ -206,6 +218,15 @@ def process_soundcloud(vargs):
                             name = track['user']['username']
 
                         filename = sanitize_filename(name + ' - ' + track['title'] + '.mp3')
+
+                        if folders:
+                            if not exists(name):
+                                mkdir(name)
+                            filename = join(name, filename)
+
+                        if exists(filename) and folders:
+                            puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
+                            return None
 
                         # Skip already downloaded track.
                         if filename in filenames:
