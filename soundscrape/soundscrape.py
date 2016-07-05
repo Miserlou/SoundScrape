@@ -196,8 +196,14 @@ def process_soundcloud(vargs):
                 artist_id = str(artist.id)
                 tracks = client.get('/users/' + artist_id + '/tracks', limit=200)
             elif resolved.kind == 'playlist':
-                tracks = resolved.tracks
                 id3_extras['album'] = resolved.title
+                if resolved.tracks != []:
+                    tracks = resolved.tracks
+                else:
+                    tracks = get_soundcloud_api_playlist_data(resolved.id)['tracks']
+                    for track in tracks:
+                        download_track(track, resolved.title, keep_previews, folders)
+
             elif resolved.kind == 'track':
                 tracks = [resolved]
             elif resolved.kind == 'group':
@@ -214,58 +220,6 @@ def process_soundcloud(vargs):
 
                     data = get_soundcloud_api2_data(artist_id)
 
-                    def download_track(track, album_name=u''):
-    
-                        hard_track_url = get_hard_track_url(track['id'])
-
-                        # We have no info on this track whatsoever.
-                        if not 'title' in track:
-                            return None
-
-                        if not keep_previews:
-                            if (track.get('duration', 0) < track.get('full_duration', 0)):
-                                puts(colored.yellow("Skipping preview track") + colored.white(": " + track['title']))
-                                return None
-
-                        # May not have a "full name"
-                        name = track['user']['full_name']
-                        if name == '':
-                            name = track['user']['username']
-
-                        filename = sanitize_filename(name + ' - ' + track['title'] + '.mp3')
-
-                        if folders:
-                            if not exists(name):
-                                mkdir(name)
-                            filename = join(name, filename)
-
-                        if exists(filename) and folders:
-                            puts(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
-
-                            return None
-
-                        # Skip already downloaded track.
-                        if filename in filenames:
-                            return None
-
-                        if hard_track_url:
-                            puts(colored.green("Scraping") + colored.white(": " + track['title']))
-                        else:
-                            # Region coded?
-                            puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
-                            return None
-
-                        filename = download_file(hard_track_url, filename)
-                        tag_file(filename,
-                                 artist=name,
-                                 title=track['title'],
-                                 year=track['created_at'][:4],
-                                 genre=track['genre'],
-                                 album=album_name,
-                                 artwork_url=track['artwork_url'])
-
-                        return filename
-
                     for track in data['collection']:
 
                         if len(filenames) >= num_tracks:
@@ -274,7 +228,7 @@ def process_soundcloud(vargs):
                         if track['type'] == 'playlist':
                             for playlist_track in track['playlist']['tracks']:
                                 album_name = track['playlist']['title']
-                                filename = download_track(playlist_track, album_name)
+                                filename = download_track(playlist_track, album_name, keep_previews, folders, filenames)
                                 if filename:
                                     filenames.append(filename)
                         else:
@@ -298,6 +252,60 @@ def get_client():
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
 
+def download_track(track, album_name=u'', keep_previews=False, folders=False, filenames=[]):
+    """
+    Given a track, force scrape it.
+    """
+    
+    hard_track_url = get_hard_track_url(track['id'])
+
+    # We have no info on this track whatsoever.
+    if not 'title' in track:
+        return None
+
+    if not keep_previews:
+        if (track.get('duration', 0) < track.get('full_duration', 0)):
+            puts(colored.yellow("Skipping preview track") + colored.white(": " + track['title']))
+            return None
+
+    # May not have a "full name"
+    name = track['user'].get('full_name', '')
+    if name == '':
+        name = track['user']['username']
+
+    filename = sanitize_filename(name + ' - ' + track['title'] + '.mp3')
+
+    if folders:
+        if not exists(name):
+            mkdir(name)
+        filename = join(name, filename)
+
+    if exists(filename) and folders:
+        puts(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
+
+        return None
+
+    # Skip already downloaded track.
+    if filename in filenames:
+        return None
+
+    if hard_track_url:
+        puts(colored.green("Scraping") + colored.white(": " + track['title']))
+    else:
+        # Region coded?
+        puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
+        return None
+
+    filename = download_file(hard_track_url, filename)
+    tag_file(filename,
+             artist=name,
+             title=track['title'],
+             year=track['created_at'][:4],
+             genre=track['genre'],
+             album=album_name,
+             artwork_url=track['artwork_url'])
+
+    return filename
 
 def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, id3_extras={}):
     """
@@ -390,6 +398,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
     return filenames
 
 
+
 def get_soundcloud_data(url):
     """
     Scrapes a SoundCloud page for a track's important information.
@@ -423,6 +432,17 @@ def get_soundcloud_api2_data(artist_id):
 
     return parsed
 
+def get_soundcloud_api_playlist_data(playlist_id):
+    """
+    Scrape the new API. Returns the parsed JSON response.
+    """
+
+    url = "https://api.soundcloud.com/playlists/%s?representation=full&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=1467724310" % (
+        playlist_id)
+    response = requests.get(url)
+    parsed = response.json()
+
+    return parsed
 
 def get_hard_track_url(item_id):
     """
