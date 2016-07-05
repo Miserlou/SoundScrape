@@ -2,3 +2,5 @@ env/
 *.DS_Store
 *.pyc
 *.bak
+build/
+dist/

@@ -1,5 +1,6 @@
 import os
 import setuptools
+import soundscrape
 import sys
 
 from setuptools import setup
@@ -26,7 +27,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='soundscrape',
-    version='0.26.2',
+    version=soundscrape.__version__,
     packages=['soundscrape'],
     install_requires=required,
     extras_require={ ':python_version < "3.0"': [ 'wsgiref>=0.1.2', ], },    

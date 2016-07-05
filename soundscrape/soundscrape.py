@@ -28,7 +28,6 @@ MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 AGGRESSIVE_CLIENT_ID = '02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea'
 APP_VERSION = '1464790339'
 
-
 ####################################################################
 
 
@@ -45,7 +44,7 @@ def main():
         os.system("chcp 65001");
 
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
-    parser.add_argument('artist_url', metavar='U', type=str,
+    parser.add_argument('artist_url', metavar='U', type=str, nargs='*',
                         help='An artist\'s SoundCloud username or URL')
     parser.add_argument('-n', '--num-tracks', type=int, default=sys.maxsize,
                         help='The number of tracks to download')
@@ -71,12 +70,22 @@ def main():
                         help='Open downloaded files after downloading.')
     parser.add_argument('-k', '--keep', action='store_true',
                         help='Keep 30-second preview tracks')
+    parser.add_argument('-v', '--version', action='store_true', default=False,
+                        help='Display the current version of SoundScrape')
 
     args = parser.parse_args()
     vargs = vars(args)
-    if not any(vargs.values()):
+
+    if vargs['version']:
+        import pkg_resources
+        version = pkg_resources.require("soundscrape")[0].version
+        print(version)
+        return
+
+    if not vargs['artist_url']:
         parser.error('Please supply an artist\'s username or URL!')
 
+    vargs['artist_url'] = vargs['artist_url'][0]
     artist_url = vargs['artist_url']
 
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
@@ -161,7 +170,7 @@ def process_soundcloud(vargs):
             filename = join(name, filename)
 
         if exists(filename) and folders:
-            puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
+            puts(colored.yellow("Track already downloaded: ") + colored.white(track_data['title']))
             return None
 
         filename = download_file(hard_track_url, filename)
@@ -231,7 +240,8 @@ def process_soundcloud(vargs):
                             filename = join(name, filename)
 
                         if exists(filename) and folders:
-                            puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
+                            puts(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
+
                             return None
 
                         # Skip already downloaded track.
@@ -920,13 +930,18 @@ def download_file(url, path):
     if url[0:2] == '//':
         url = 'https://' + url[2:]
 
+    # Use a temporary file so that we don't import incomplete files.
+    tmp_path = path + '.tmp'
+
     r = requests.get(url, stream=True)
-    with open(path, 'wb') as f:
+    with open(tmp_path, 'wb') as f:
         total_length = int(r.headers.get('content-length', 0))
         for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
                 f.flush()
+
+    os.rename(tmp_path, path)
 
     return path
 
