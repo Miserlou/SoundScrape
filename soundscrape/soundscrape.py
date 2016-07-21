@@ -129,8 +129,10 @@ def process_soundcloud(vargs):
             artist_url = 'https://soundcloud.com/' + artist_url.lower()
             if vargs['likes'] or 'likes' in artist_url.lower():
                 likes = True
+
     if 'likes' in artist_url.lower():
         artist_url = artist_url[0:artist_url.find('/likes')]
+        likes = True
 
     if one_track:
         num_tracks = 1
@@ -143,7 +145,22 @@ def process_soundcloud(vargs):
 
         elif likes:
             userId = str(client.get('/resolve', url=artist_url).id)
-            resolved = client.get('/users/' + userId + '/favorites', limit=200)
+
+            resolved = client.get('/users/' + userId + '/favorites', limit=200, linked_partitioning=1)
+            next_href = False
+            if(hasattr(resolved, 'next_href')): 
+                next_href = resolved.next_href
+            while (next_href):  
+                
+                resolved2 = requests.get(next_href).json()          
+                if('next_href' in resolved2): 
+                    next_href = resolved2['next_href']
+                else: 
+                    next_href = False
+                resolved2 = soundcloud.resource.ResourceList(resolved2['collection']) 
+                resolved.collection.extend(resolved2)
+            resolved = resolved.collection
+
         else:
             resolved = client.get('/resolve', url=artist_url, limit=200)
 
