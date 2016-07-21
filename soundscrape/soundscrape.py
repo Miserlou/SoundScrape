@@ -555,6 +555,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
                 puts(colored.yellow("Track already downloaded: ") + colored.white(track_name))
                 continue
 
+            path = sanitize_filename(path)
             if not track['file']:
                 puts(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
                 continue
@@ -1055,6 +1056,13 @@ def sanitize_filename(filename):
     sanitized_filename = sanitized_filename.replace('&', 'and')
     sanitized_filename = sanitized_filename.replace('"', '')
     sanitized_filename = sanitized_filename.replace("'", '')
+    sanitized_filename = sanitized_filename.replace("/", '')
+    sanitized_filename = sanitized_filename.replace("\\", '')
+
+    # Annoying.
+    if sanitized_filename[0] == '.':
+        sanitized_filename = u'dot' + sanitized_filename[1:]
+
     return sanitized_filename
 
 
