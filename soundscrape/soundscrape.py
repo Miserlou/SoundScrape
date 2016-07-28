@@ -572,7 +572,6 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
                 puts(colored.yellow("Track already downloaded: ") + colored.white(track_name))
                 continue
 
-            path = sanitize_filename(path)
             if not track['file']:
                 puts(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
                 continue
