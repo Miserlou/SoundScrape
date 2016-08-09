@@ -56,6 +56,20 @@ class TestSoundscrape(unittest.TestCase):
         for f in glob.glob('*.mp3'):
            os.unlink(f)
 
+    def test_soundcloud_wav(self):
+        for f in glob.glob('*.wav'):
+           os.unlink(f)
+
+        wav_count = len(glob.glob1('', "*.wav"))
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/coastal/major-lazer-aerosol-can-coastal-flip', 'keep': False}
+        process_soundcloud(vargs)
+        new_wav_count = len(glob.glob1('', "*.wav"))
+        self.assertTrue(new_wav_count > wav_count)
+        self.assertTrue(new_wav_count == 1)
+
+        for f in glob.glob('*.wav'):
+           os.unlink(f)
+
     def test_bandcamp(self):
         for f in glob.glob('*.mp3'):
            os.unlink(f)
