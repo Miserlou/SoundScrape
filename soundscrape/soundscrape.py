@@ -579,15 +579,16 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
             else:
                 track_filename = '%s.mp3' % (track_name)
             track_filename = sanitize_filename(track_filename)
+
             if folders:
                 path = join(directory, track_filename)
             else:
                 path = artist + ' - ' + track_filename
+
             if exists(path):
                 puts(colored.yellow("Track already downloaded: ") + colored.white(track_name))
                 continue
 
-            path = sanitize_filename(path)
             if not track['file']:
                 puts(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
                 continue
