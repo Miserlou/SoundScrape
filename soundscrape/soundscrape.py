@@ -179,7 +179,7 @@ def process_soundcloud(vargs):
         hard_track_url = get_hard_track_url(item_id)
 
         track_data = get_soundcloud_data(artist_url)
-        puts(colored.green("Scraping") + colored.white(": " + track_data['title']))
+        puts_safe(colored.green("Scraping") + colored.white(": " + track_data['title']))
 
         filenames = []
         filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
@@ -191,7 +191,7 @@ def process_soundcloud(vargs):
             filename = join(name, filename)
 
         if exists(filename) and folders:
-            puts(colored.yellow("Track already downloaded: ") + colored.white(track_data['title']))
+            puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_data['title']))
             return None
 
         filename = download_file(hard_track_url, filename)
@@ -291,7 +291,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     if not keep_previews:
         if (track.get('duration', 0) < track.get('full_duration', 0)):
-            puts(colored.yellow("Skipping preview track") + colored.white(": " + track['title']))
+            puts_safe(colored.yellow("Skipping preview track") + colored.white(": " + track['title']))
             return None
 
     # May not have a "full name"
@@ -307,7 +307,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
         filename = join(name, filename)
 
     if exists(filename) and folders:
-        puts(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
+        puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
 
         return None
 
@@ -316,10 +316,10 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
         return None
 
     if hard_track_url:
-        puts(colored.green("Scraping") + colored.white(": " + track['title']))
+        puts_safe(colored.green("Scraping") + colored.white(": " + track['title']))
     else:
         # Region coded?
-        puts(colored.yellow("Unable to download") + colored.white(": " + track['title']))
+        puts_safe(colored.yellow("Unable to download") + colored.white(": " + track['title']))
         return None
 
     filename = download_file(hard_track_url, filename)
@@ -365,7 +365,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                     t_track['stream_url'] = track.download_url
                 else:
                     if downloadable:
-                        puts(colored.red("Skipping") + colored.white(": " + track.title))
+                        puts_safe(colored.red("Skipping") + colored.white(": " + track.title))
                         continue
                     if hasattr(track, 'stream_url'):
                         t_track['stream_url'] = track.stream_url
@@ -378,7 +378,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
 
                 track = t_track
             except Exception as e:
-                puts(colored.white(track.title) + colored.red(' is not downloadable.'))
+                puts_safe(colored.white(track.title) + colored.red(' is not downloadable.'))
                 print(e)
                 continue
 
@@ -386,7 +386,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
             continue
         try:
             if not track.get('stream_url', False):
-                puts(colored.white(track['title']) + colored.red(' is not downloadable.'))
+                puts_safe(colored.white(track['title']) + colored.red(' is not downloadable.'))
                 continue
             else:
                 track_artist = sanitize_filename(track['user']['username'])
@@ -399,10 +399,10 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                     track_filename = join(track_artist, track_filename)
 
                 if exists(track_filename) and folders:
-                    puts(colored.yellow("Track already downloaded: ") + colored.white(track_title))
+                    puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
 
-                puts(colored.green("Downloading") + colored.white(": " + track['title']))
+                puts_safe(colored.green("Downloading") + colored.white(": " + track['title']))
                 if track.get('direct', False):
                     location = track['stream_url']
                 else:
@@ -428,7 +428,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
 
                 filenames.append(filename)
         except Exception as e:
-            puts(colored.red("Problem downloading ") + colored.white(track['title']))
+            puts_safe(colored.red("Problem downloading ") + colored.white(track['title']))
             print(e)
 
     return filenames
@@ -586,14 +586,14 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
                 path = artist + ' - ' + track_filename
 
             if exists(path):
-                puts(colored.yellow("Track already downloaded: ") + colored.white(track_name))
+                puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_name))
                 continue
 
             if not track['file']:
-                puts(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
+                puts_safe(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
                 continue
 
-            puts(colored.green("Downloading") + colored.white(": " + track_name))
+            puts_safe(colored.green("Downloading") + colored.white(": " + track_name))
             path = download_file(track['file']['mp3-128'], path)
 
             album_year = album_data['album_release_date']
@@ -612,7 +612,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
             filenames.append(path)
 
         except Exception as e:
-            puts(colored.red("Problem downloading ") + colored.white(track_name))
+            puts_safe(colored.red("Problem downloading ") + colored.white(track_name))
             print(e)
     return filenames
 
@@ -696,7 +696,7 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
     try:
         data = get_mixcloud_data(mc_url)
     except Exception as e:
-        puts(colored.red("Problem downloading ") + mc_url)
+        puts_safe(colored.red("Problem downloading ") + mc_url)
         print(e)
         return []
 
@@ -711,10 +711,10 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
             mkdir(track_artist)
         track_filename = join(track_artist, track_filename)
         if exists(track_filename):
-            puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
+            puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
 
-    puts(colored.green("Downloading") + colored.white(
+    puts_safe(colored.green("Downloading") + colored.white(
         ': ' + data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")"))
     download_file(data['mp3_url'], track_filename)
     if track_filename[-4:] == '.mp3':
@@ -823,7 +823,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
     try:
         data = get_audiomack_data(mc_url)
     except Exception as e:
-        puts(colored.red("Problem downloading ") + mc_url)
+        puts_safe(colored.red("Problem downloading ") + mc_url)
         print(e)
 
     filenames = []
@@ -837,10 +837,10 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
             mkdir(track_artist)
         track_filename = join(track_artist, track_filename)
         if exists(track_filename):
-            puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
+            puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
 
-    puts(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
+    puts_safe(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
     download_file(data['mp3_url'], track_filename)
     tag_file(track_filename,
              artist=data['artist'],
@@ -916,7 +916,7 @@ def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
     try:
         data = get_hive_data(mc_url)
     except Exception as e:
-        puts(colored.red("Problem downloading ") + mc_url)
+        puts_safe(colored.red("Problem downloading ") + mc_url)
         print(e)
 
     filenames = []
@@ -930,10 +930,10 @@ def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
     #         mkdir(track_artist)
     #     track_filename = join(track_artist, track_filename)
     #     if exists(track_filename):
-    #         puts(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
+    #         puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
     #         return []
 
-    # puts(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
+    # puts_safe(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
     # download_file(data['mp3_url'], track_filename)
     # tag_file(track_filename,
     #         artist=data['artist'],
@@ -1100,6 +1100,12 @@ def sanitize_filename(filename):
         sanitized_filename = u'dot' + sanitized_filename[1:]
 
     return sanitized_filename
+
+def puts_safe(text):
+    if sys.platform == "win32": 
+        puts(text.encode(sys.stdout.encoding, errors='replace').decode())
+    else:
+        puts(text)
 
 
 ####################################################################
