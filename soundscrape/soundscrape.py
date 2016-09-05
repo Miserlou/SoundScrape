@@ -556,7 +556,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     # so we call the scrape_bandcamp_url() method for each one
     if type(album_data) is list:
         for album_url in album_data:
-            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders))
+            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders, custom_path))
         return filenames
 
     artist = album_data["artist"]
