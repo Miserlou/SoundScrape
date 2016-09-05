@@ -66,7 +66,7 @@ def main():
                         help='The name of a specific track by an artist')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
-    parser.add_argument('-p', '--path', type=str, default='.',
+    parser.add_argument('-p', '--path', type=str, default='',
                         help='Set directory path where downloads should be saved to')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
@@ -92,7 +92,7 @@ def main():
 
     if not exists(vargs['path']):
         if not access(dirname(vargs['path']), W_OK):
-            vargs['path'] = '.'
+            vargs['path'] = ''
         else:
             mkdir(vargs['path'])
 
@@ -288,7 +288,7 @@ def get_client():
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
 
-def download_track(track, album_name=u'', keep_previews=False, folders=False, filenames=[], custom_path='.'):
+def download_track(track, album_name=u'', keep_previews=False, folders=False, filenames=[], custom_path=''):
     """
     Given a track, force scrape it.
     """
@@ -350,7 +350,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='.', id3_extras={}):
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -549,7 +549,7 @@ def process_bandcamp(vargs):
 
 
 # Largely borrowed from Ronier's bandcampscrape
-def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
+def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=''):
     """
     Pull out artist and track info from a Bandcamp URL.
 
@@ -703,7 +703,7 @@ def process_mixcloud(vargs):
     return
 
 
-def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
+def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path=''):
     """
     Returns:
         list: filenames to open
@@ -833,7 +833,7 @@ def process_audiomack(vargs):
     return
 
 
-def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
+def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path=''):
     """
     Returns:
         list: filenames to open
@@ -927,7 +927,7 @@ def process_hive(vargs):
     return
 
 
-def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
+def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path=''):
     """
     Scrape a Hive.co download page.
 
