@@ -66,7 +66,7 @@ def main():
                         help='The name of a specific track by an artist')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
-    parser.add_argument('-p', '--path', type=str, default='',
+    parser.add_argument('-p', '--cpath', type=str, default='',
                         help='Set directory path where downloads should be saved to')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
@@ -90,11 +90,11 @@ def main():
     vargs['artist_url'] = vargs['artist_url'][0]
     artist_url = vargs['artist_url']
 
-    if not exists(vargs['path']):
-        if not access(dirname(vargs['path']), W_OK):
-            vargs['path'] = ''
+    if not exists(vargs['cpath']):
+        if not access(dirname(vargs['cpath']), W_OK):
+            vargs['cpath'] = ''
         else:
-            mkdir(vargs['path'])
+            mkdir(vargs['cpath'])
 
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
@@ -521,7 +521,7 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['cpath'])
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
