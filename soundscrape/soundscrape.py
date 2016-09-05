@@ -15,8 +15,8 @@ from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC
 from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
-from os.path import exists, join
-from os import mkdir
+from os.path import dirname, exists, join
+from os import access, mkdir, W_OK
 
 ####################################################################
 
@@ -66,6 +66,8 @@ def main():
                         help='The name of a specific track by an artist')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
+    parser.add_argument('-p', '--path', type=str, default='.',
+                        help='Set directory path where downloads should be saved to')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
     parser.add_argument('-k', '--keep', action='store_true',
@@ -87,6 +89,12 @@ def main():
 
     vargs['artist_url'] = vargs['artist_url'][0]
     artist_url = vargs['artist_url']
+
+    if not exists(vargs['path']):
+        if not access(dirname(vargs['path']), W_OK):
+            vargs['path'] = '.'
+        else:
+            mkdir(vargs['path'])
 
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
         process_bandcamp(vargs)
@@ -185,10 +193,12 @@ def process_soundcloud(vargs):
         filename = sanitize_filename(track_data['artist'] + ' - ' + track_data['title'] + '.mp3')
 
         if folders:
-            name = track_data['artist']
-            if not exists(name):
-                mkdir(name)
-            filename = join(name, filename)
+            name_path = join(vargs['path'], track_data['artist'])
+            if not exists(name_path):
+                mkdir(name_path)
+            filename = join(name_path, filename)
+        else:
+            filename = join(vargs['path'], filename)
 
         if exists(filename) and folders:
             puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_data['title']))
@@ -228,7 +238,7 @@ def process_soundcloud(vargs):
                 else:
                     tracks = get_soundcloud_api_playlist_data(resolved.id)['tracks']
                     for track in tracks:
-                        download_track(track, resolved.title, keep_previews, folders)
+                        download_track(track, resolved.title, keep_previews, folders, custom_path=vargs['path'])
 
             elif resolved.kind == 'track':
                 tracks = [resolved]
@@ -254,17 +264,17 @@ def process_soundcloud(vargs):
                         if track['type'] == 'playlist':
                             for playlist_track in track['playlist']['tracks']:
                                 album_name = track['playlist']['title']
-                                filename = download_track(playlist_track, album_name, keep_previews, folders, filenames)
+                                filename = download_track(playlist_track, album_name, keep_previews, folders, filenames, custom_path=vargs['path'])
                                 if filename:
                                     filenames.append(filename)
                         else:
                             d_track = track['track']
-                            filename = download_track(d_track)
+                            filename = download_track(d_track, custom_path=vargs['path'])
                             if filename:
                                 filenames.append(filename)
 
         if not aggressive:
-            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'],
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'],
                                         id3_extras=id3_extras)
 
     if vargs['open']:
@@ -278,7 +288,7 @@ def get_client():
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
 
-def download_track(track, album_name=u'', keep_previews=False, folders=False, filenames=[]):
+def download_track(track, album_name=u'', keep_previews=False, folders=False, filenames=[], custom_path='.'):
     """
     Given a track, force scrape it.
     """
@@ -302,9 +312,12 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
     filename = sanitize_filename(name + ' - ' + track['title'] + '.mp3')
 
     if folders:
-        if not exists(name):
-            mkdir(name)
-        filename = join(name, filename)
+        name_path = join(custom_path, name)
+        if not exists(name_path):
+            mkdir(name_path)
+        filename = join(name_path, filename)
+    else:
+        filename = join(custom_path, filename)
 
     if exists(filename) and folders:
         puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
@@ -337,7 +350,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, id3_extras={}):
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='.', id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -394,9 +407,12 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 track_filename = track_artist + ' - ' + track_title + '.mp3'
 
                 if folders:
-                    if not exists(track_artist):
-                        mkdir(track_artist)
-                    track_filename = join(track_artist, track_filename)
+                    track_artist_path = join(custom_path, track_artist)
+                    if not exists(track_artist_path):
+                        mkdir(track_artist_path)
+                    track_filename = join(track_artist_path, track_filename)
+                else:
+                    track_filename = join(custom_path, track_filename)
 
                 if exists(track_filename) and folders:
                     puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
@@ -513,7 +529,7 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
@@ -533,7 +549,7 @@ def process_bandcamp(vargs):
 
 
 # Largely borrowed from Ronier's bandcampscrape
-def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
+def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
     """
     Pull out artist and track info from a Bandcamp URL.
 
@@ -548,7 +564,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
     # so we call the scrape_bandcamp_url() method for each one
     if type(album_data) is list:
         for album_url in album_data:
-            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders))
+            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders, custom_path))
         return filenames
 
     artist = album_data["artist"]
@@ -560,6 +576,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
         else:
             directory = artist
         directory = sanitize_filename(directory)
+        directory = join(custom_path, directory)
         if not exists(directory):
             mkdir(directory)
 
@@ -583,7 +600,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False):
             if folders:
                 path = join(directory, track_filename)
             else:
-                path = artist + ' - ' + track_filename
+                path = join(custom_path, artist + ' - ' + track_filename)
 
             if exists(path):
                 puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_name))
@@ -678,7 +695,7 @@ def process_mixcloud(vargs):
     else:
         mc_url = 'https://mixcloud.com/' + artist_url
 
-    filenames = scrape_mixcloud_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+    filenames = scrape_mixcloud_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
 
     if vargs['open']:
         open_files(filenames)
@@ -686,7 +703,7 @@ def process_mixcloud(vargs):
     return
 
 
-def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
+def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
     """
     Returns:
         list: filenames to open
@@ -707,12 +724,15 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False):
     track_filename = track_artist + ' - ' + track_title + data['mp3_url'][-4:]
 
     if folders:
-        if not exists(track_artist):
-            mkdir(track_artist)
-        track_filename = join(track_artist, track_filename)
+        track_artist_path = join(custom_path, track_artist)
+        if not exists(track_artist_path):
+            mkdir(track_artist_path)
+        track_filename = join(track_artist_path, track_filename)
         if exists(track_filename):
             puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
+    else:
+        track_filename = join(custom_path, track_filename)
 
     puts_safe(colored.green("Downloading") + colored.white(
         ': ' + data['artist'] + " - " + data['title'] + " (" + track_filename[-4:] + ")"))
@@ -805,7 +825,7 @@ def process_audiomack(vargs):
     else:
         mc_url = 'https://audiomack.com/' + artist_url
 
-    filenames = scrape_audiomack_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+    filenames = scrape_audiomack_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
 
     if vargs['open']:
         open_files(filenames)
@@ -813,7 +833,7 @@ def process_audiomack(vargs):
     return
 
 
-def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
+def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
     """
     Returns:
         list: filenames to open
@@ -833,12 +853,15 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False):
     track_filename = track_artist + ' - ' + track_title + '.mp3'
 
     if folders:
-        if not exists(track_artist):
-            mkdir(track_artist)
-        track_filename = join(track_artist, track_filename)
+        track_artist_path = join(custom_path, track_artist)
+        if not exists(track_artist_path):
+            mkdir(track_artist_path)
+        track_filename = join(track_artist_path, track_filename)
         if exists(track_filename):
             puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
             return []
+    else:
+        track_filename = join(custom_path, track_filename)
 
     puts_safe(colored.green("Downloading") + colored.white(': ' + data['artist'] + " - " + data['title']))
     download_file(data['mp3_url'], track_filename)
@@ -896,7 +919,7 @@ def process_hive(vargs):
     else:
         mc_url = 'https://www.hive.co/downloads/download/' + artist_url
 
-    filenames = scrape_hive_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
+    filenames = scrape_hive_url(mc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
 
     if vargs['open']:
         open_files(filenames)
@@ -904,7 +927,7 @@ def process_hive(vargs):
     return
 
 
-def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
+def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path='.'):
     """
     Scrape a Hive.co download page.
 
@@ -926,9 +949,10 @@ def scrape_hive_url(mc_url, num_tracks=sys.maxsize, folders=False):
     # track_filename = track_artist + ' - ' + track_title + '.mp3'
 
     # if folders:
-    #     if not exists(track_artist):
-    #         mkdir(track_artist)
-    #     track_filename = join(track_artist, track_filename)
+    #     track_artist_path = join(custom_path, track_artist)
+    #     if not exists(track_artist_path):
+    #         mkdir(track_artist_path)
+    #     track_filename = join(track_artist_path, track_filename)
     #     if exists(track_filename):
     #         puts_safe(colored.yellow("Skipping") + colored.white(': ' + data['title'] + " - it already exists!"))
     #         return []
