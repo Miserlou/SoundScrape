@@ -521,7 +521,7 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
+    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'])
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
