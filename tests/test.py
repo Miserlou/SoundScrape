@@ -34,7 +34,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/fzpz/revised', 'keep': True}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'https://soundcloud.com/fzpz/revised', 'keep': True}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -47,7 +47,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'puptheband', 'keep': False}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'puptheband', 'keep': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -61,7 +61,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         wav_count = len(glob.glob1('', "*.wav"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/coastal/major-lazer-aerosol-can-coastal-flip', 'keep': False}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': True, 'artist_url': 'https://soundcloud.com/coastal/major-lazer-aerosol-can-coastal-flip', 'keep': False}
         process_soundcloud(vargs)
         new_wav_count = len(glob.glob1('', "*.wav"))
         self.assertTrue(new_wav_count > wav_count)
@@ -75,7 +75,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://atenrays.bandcamp.com/track/who-u-think'}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'https://atenrays.bandcamp.com/track/who-u-think'}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -88,7 +88,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit'}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit'}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -107,7 +107,7 @@ class TestSoundscrape(unittest.TestCase):
         # shortest mix I could find that was still semi tolerable
         mp3_count = len(glob.glob1('', "*.mp3"))
         m4a_count = len(glob.glob1('', "*.m4a"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://www.mixcloud.com/Bobby_T_FS15/coffee-cigarettes-saturday-morning-hip-hop-fix/'}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'https://www.mixcloud.com/Bobby_T_FS15/coffee-cigarettes-saturday-morning-hip-hop-fix/'}
         process_mixcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         new_m4a_count = len(glob.glob1('', "*.m4a"))
@@ -124,7 +124,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'audiomack': True, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://www.audiomack.com/song/bottomfeedermusic/power'}
+        vargs = {'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'audiomack': True, 'downloadable': False, 'likes': False, 'open': False, 'convert': False, 'artist_url': 'https://www.audiomack.com/song/bottomfeedermusic/power'}
         process_audiomack(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
