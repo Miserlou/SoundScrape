@@ -85,7 +85,7 @@ def main():
     if not vargs['artist_url']:
         parser.error('Please supply an artist\'s username or URL!')
 
-    vargs['artist_url'] = vargs['artist_url'][0]
+    vargs['artist_url'] = vargs['artist_url'][0].decode('utf-8')
     artist_url = vargs['artist_url']
 
     if 'bandcamp.com' in artist_url or vargs['bandcamp']:
