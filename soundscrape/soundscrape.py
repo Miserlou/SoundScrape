@@ -600,7 +600,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
             if folders:
                 path = join(directory, track_filename)
             else:
-                path = join(custom_path, artist + ' - ' + track_filename)
+                path = join(custom_path, sanitize_filename(artist) + ' - ' + track_filename)
 
             if exists(path):
                 puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_name))
