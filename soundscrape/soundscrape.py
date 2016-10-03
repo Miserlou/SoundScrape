@@ -8,6 +8,7 @@ import re
 import requests
 import soundcloud
 import sys
+import urllib
 
 from clint.textui import colored, puts, progress
 from datetime import datetime
@@ -87,7 +88,11 @@ def main():
     if not vargs['artist_url']:
         parser.error('Please supply an artist\'s username or URL!')
 
-    vargs['artist_url'] = vargs['artist_url'][0].decode('utf-8')
+    if sys.version_info < (3,0,0):
+        vargs['artist_url'] = urllib.quote(vargs['artist_url'][0], safe=':/')
+    else:
+        vargs['artist_url'] = urllib.parse.quote(vargs['artist_url'][0], safe=':/')
+    
     artist_url = vargs['artist_url']
 
     if not exists(vargs['path']):
@@ -600,7 +605,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
             if folders:
                 path = join(directory, track_filename)
             else:
-                path = join(custom_path, artist + ' - ' + track_filename)
+                path = join(custom_path, sanitize_filename(artist) + ' - ' + track_filename)
 
             if exists(path):
                 puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_name))
