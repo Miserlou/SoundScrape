@@ -650,6 +650,7 @@ def get_bandcamp_metadata(url):
     try:
         sloppy_json = request.text.split("var TralbumData = ")
         sloppy_json = sloppy_json[1].replace('" + "', "")
+        sloppy_json = sloppy_json.replace("'", "'")
         sloppy_json = sloppy_json.split("};")[0] + "};"
         sloppy_json = sloppy_json.replace("};", "}")
         output = demjson.decode(sloppy_json)
