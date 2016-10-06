@@ -650,7 +650,6 @@ def get_bandcamp_metadata(url):
     try:
         sloppy_json = request.text.split("var TralbumData = ")
         sloppy_json = sloppy_json[1].replace('" + "', "")
-        sloppy_json = sloppy_json.replace("'", "\'")
         sloppy_json = sloppy_json.split("};")[0] + "};"
         sloppy_json = sloppy_json.replace("};", "}")
         output = demjson.decode(sloppy_json)
@@ -680,6 +679,14 @@ def get_bandcamp_metadata(url):
     match = re.search(regex_album_name, request.text, re.MULTILINE)
     if match:
         output['album_name'] = match.group(1)
+
+    try:
+        artUrl = request.text.split("\"tralbumArt\">")[1].split("\">")[0].split("href=\"")[1]
+        output['artFullsizeUrl'] = artUrl
+    except:
+        puts_safe(colored.red("Couldn't get full artwork") + "")
+        output['artFullsizeUrl'] = None
+    
     return output
 
 
