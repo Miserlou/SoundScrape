@@ -15,7 +15,6 @@ from datetime import datetime
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
-from mutagen.easyid3 import EasyID3
 from subprocess import Popen, PIPE
 from os.path import dirname, exists, join
 from os import access, mkdir, W_OK
