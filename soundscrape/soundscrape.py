@@ -13,7 +13,7 @@ import urllib
 from clint.textui import colored, puts, progress
 from datetime import datetime
 from mutagen.mp3 import MP3, EasyMP3
-from mutagen.id3 import APIC
+from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
 from os.path import dirname, exists, join
@@ -629,7 +629,8 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
                      year=album_year,
                      genre=album_data['genre'],
                      artwork_url=album_data['artFullsizeUrl'],
-                     track_number=track_number)
+                     track_number=track_number,
+                     url=album_data['url'])
 
             filenames.append(path)
 
@@ -1041,7 +1042,7 @@ def download_file(url, path):
     return path
 
 
-def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, album=None, track_number=None):
+def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, album=None, track_number=None, url=None):
     """
     Attempt to put ID3 tags on a file.
 
@@ -1054,6 +1055,7 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
         album (str):
         track_number (str):
         filename (str):
+        url (str):
     """
 
     try:
@@ -1062,13 +1064,15 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
         audio["artist"] = artist
         audio["title"] = title
         if year:
-            audio["date"] = str(str(year).encode('ascii','ignore'))
+            audio["date"] = str(year)
         if album:
             audio["album"] = album
         if track_number:
             audio["tracknumber"] = track_number
         if genre:
             audio["genre"] = genre
+        if url: # saves the tag as WOAR
+            audio["website"] = url
         audio.save()
 
         if artwork_url:
@@ -1101,6 +1105,12 @@ def tag_file(filename, artist, title, year=None, genre=None, artwork_url=None, a
                     data=image_data
                 )
             )
+            audio.save()
+
+        # because there is software that doesn't seem to use WOAR we save url tag again as WXXX
+        if url:
+            audio = MP3(filename, ID3=OldID3)
+            audio.tags.add( WXXX( encoding=3, url=url ) )
             audio.save()
 
         return True
