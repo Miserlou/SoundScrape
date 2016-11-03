@@ -41,7 +41,7 @@ def main():
     """
 
     # Hack related to #58
-    if sys.platform == "win32": 
+    if sys.platform == "win32":
         os.system("chcp 65001");
 
     parser = argparse.ArgumentParser(description='SoundScrape. Scrape an artist from SoundCloud.\n')
@@ -92,7 +92,7 @@ def main():
         vargs['artist_url'] = urllib.quote(vargs['artist_url'][0], safe=':/')
     else:
         vargs['artist_url'] = urllib.parse.quote(vargs['artist_url'][0], safe=':/')
-    
+
     artist_url = vargs['artist_url']
 
     if not exists(vargs['path']):
@@ -161,16 +161,16 @@ def process_soundcloud(vargs):
 
             resolved = client.get('/users/' + userId + '/favorites', limit=200, linked_partitioning=1)
             next_href = False
-            if(hasattr(resolved, 'next_href')): 
+            if(hasattr(resolved, 'next_href')):
                 next_href = resolved.next_href
-            while (next_href):  
+            while (next_href):
 
-                resolved2 = requests.get(next_href).json()          
-                if('next_href' in resolved2): 
+                resolved2 = requests.get(next_href).json()
+                if('next_href' in resolved2):
                     next_href = resolved2['next_href']
-                else: 
+                else:
                     next_href = False
-                resolved2 = soundcloud.resource.ResourceList(resolved2['collection']) 
+                resolved2 = soundcloud.resource.ResourceList(resolved2['collection'])
                 resolved.collection.extend(resolved2)
             resolved = resolved.collection
 
@@ -180,7 +180,7 @@ def process_soundcloud(vargs):
     except Exception as e:  # HTTPError?
 
         # SoundScrape is trying to prevent us from downloading this.
-        # We're going to have to stop trusting the API/client and 
+        # We're going to have to stop trusting the API/client and
         # do all our own scraping. Boo.
 
         if '404 Client Error' in str(e):
@@ -297,7 +297,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
     """
     Given a track, force scrape it.
     """
-    
+
     hard_track_url = get_hard_track_url(track['id'])
 
     # We have no info on this track whatsoever.
@@ -688,7 +688,7 @@ def get_bandcamp_metadata(url):
     except:
         puts_safe(colored.red("Couldn't get full artwork") + "")
         output['artFullsizeUrl'] = None
-    
+
     return output
 
 
@@ -783,27 +783,33 @@ def get_mixcloud_data(url):
     # Iterate to fish for the original mp3 stream..
     stream_server = "https://stream"
     m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
-    for server in range(14, 23):
+    for server in range(1, 23):
         m4a_url = waveform_url.replace(waveform_server,
                                        stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
         mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
-        if requests.head(mp3_url).status_code == 200:
-            break
-        else:
+        try:
+            if requests.head(mp3_url).status_code == 200:
+                break
+            else:
+                mp3_url = None
+        except Exception as e:
             mp3_url = None
 
     # .. else fallback to an m4a.
     if not mp3_url:
         m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json',
                                                                                                            '.m4a')
-        for server in range(14, 23):
+        for server in range(1, 23):
             mp3_url = waveform_url.replace(waveform_server,
                                            stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json',
                                                                                                             '.m4a')
-            if requests.head(mp3_url).status_code == 200:
-                if '?' in mp3_url:
-                    mp3_url = mp3_url.split('?')[0]
-                break
+            try:
+                if requests.head(mp3_url).status_code == 200:
+                    if '?' in mp3_url:
+                        mp3_url = mp3_url.split('?')[0]
+                    break
+            except Exception as e:
+                continue
 
     full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(' by ')[0].strip()
@@ -1133,7 +1139,7 @@ def sanitize_filename(filename):
     Make sure filenames are valid paths.
 
     Returns:
-        str: 
+        str:
     """
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', '-', filename)
     sanitized_filename = sanitized_filename.replace('&', 'and')
@@ -1149,7 +1155,7 @@ def sanitize_filename(filename):
     return sanitized_filename
 
 def puts_safe(text):
-    if sys.platform == "win32": 
+    if sys.platform == "win32":
         puts(text.encode(sys.stdout.encoding, errors='replace').decode())
     else:
         puts(text)
