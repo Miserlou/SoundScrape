@@ -1146,8 +1146,11 @@ def sanitize_filename(filename):
     return sanitized_filename
 
 def puts_safe(text):
-    if sys.platform == "win32": 
-        puts(text.encode(sys.stdout.encoding, errors='replace').decode())
+    if sys.platform == "win32":
+        if sys.version_info < (3,0,0):
+            puts(text)
+        else:
+            puts(text.encode(sys.stdout.encoding, errors='replace').decode())
     else:
         puts(text)
 
