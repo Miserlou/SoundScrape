@@ -205,7 +205,7 @@ def process_soundcloud(vargs):
         else:
             filename = join(vargs['path'], filename)
 
-        if exists(filename) and folders:
+        if exists(filename):
             puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_data['title']))
             return None
 
@@ -324,9 +324,8 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
     else:
         filename = join(custom_path, filename)
 
-    if exists(filename) and folders:
+    if exists(filename):
         puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track['title']))
-
         return None
 
     # Skip already downloaded track.
@@ -397,7 +396,6 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 track = t_track
             except Exception as e:
                 puts_safe(colored.white(track.title) + colored.red(' is not downloadable.'))
-                print(e)
                 continue
 
         if i > num_tracks - 1:
@@ -419,7 +417,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 else:
                     track_filename = join(custom_path, track_filename)
 
-                if exists(track_filename) and folders:
+                if exists(track_filename):
                     puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
 
@@ -450,7 +448,6 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 filenames.append(filename)
         except Exception as e:
             puts_safe(colored.red("Problem downloading ") + colored.white(track['title']))
-            print(e)
 
     return filenames
 
@@ -1156,7 +1153,10 @@ def sanitize_filename(filename):
 
 def puts_safe(text):
     if sys.platform == "win32":
-        puts(text.encode(sys.stdout.encoding, errors='replace').decode())
+        if sys.version_info < (3,0,0):
+            puts(text)
+        else:
+            puts(text.encode(sys.stdout.encoding, errors='replace').decode())
     else:
         puts(text)
 
