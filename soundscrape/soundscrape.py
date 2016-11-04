@@ -242,6 +242,8 @@ def process_soundcloud(vargs):
                     tracks = resolved.tracks
                 else:
                     tracks = get_soundcloud_api_playlist_data(resolved.id)['tracks']
+                    tracks = tracks[:num_tracks]
+                    aggressive = True
                     for track in tracks:
                         download_track(track, resolved.title, keep_previews, folders, custom_path=vargs['path'])
 
@@ -267,6 +269,7 @@ def process_soundcloud(vargs):
                             break
 
                         if track['type'] == 'playlist':
+                            track['playlist']['tracks'] = track['playlist']['tracks'][:num_tracks]
                             for playlist_track in track['playlist']['tracks']:
                                 album_name = track['playlist']['title']
                                 filename = download_track(playlist_track, album_name, keep_previews, folders, filenames, custom_path=vargs['path'])
