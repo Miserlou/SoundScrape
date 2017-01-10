@@ -774,42 +774,23 @@ def get_mixcloud_data(url):
 
     data = {}
     request = requests.get(url)
-    waveform_server = "https://waveform.mixcloud.com"
+    preview_mp3_url = request.text.split('m-preview="')[1].split('" m-preview-light')[0]
+    song_uuid = request.text.split('m-preview="')[1].split('" m-preview-light')[0].split('previews/')[1].split('.mp3')[0]
 
-    waveform_url = request.text.split('m-waveform="')[1].split('"')[0]
-    stream_server = \
-    request.text.split('m-p-ref="cloudcast_page" m-play-info="')[1].split('" m-preview="')[1].split('.mixcloud.com')[0]
-
-    # Iterate to fish for the original mp3 stream..
-    stream_server = "https://stream"
-    m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
+    # Fish for the m4a..
     for server in range(1, 23):
-        m4a_url = waveform_url.replace(waveform_server,
-                                       stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json', '.m4a')
-        mp3_url = m4a_url.replace('m4a/64', 'originals').replace('.m4a', '.mp3').replace('originals/', 'originals')
+        # Ex: https://stream6.mixcloud.com/c/m4a/64/1/2/0/9/30fe-23aa-40da-9bf3-4bee2fba649d.m4a
+        mp3_url = "https://stream" + str(server) + ".mixcloud.com/c/m4a/64/" + song_uuid + '.m4a'
         try:
             if requests.head(mp3_url).status_code == 200:
+                if '?' in mp3_url:
+                    mp3_url = mp3_url.split('?')[0]
                 break
-            else:
-                mp3_url = None
         except Exception as e:
-            mp3_url = None
+            continue
 
-    # .. else fallback to an m4a.
-    if not mp3_url:
-        m4a_url = waveform_url.replace(waveform_server, stream_server + ".mixcloud.com/c/m4a/64/").replace('.json',
-                                                                                                           '.m4a')
-        for server in range(1, 23):
-            mp3_url = waveform_url.replace(waveform_server,
-                                           stream_server + str(server) + ".mixcloud.com/c/m4a/64/").replace('.json',
-                                                                                                            '.m4a')
-            try:
-                if requests.head(mp3_url).status_code == 200:
-                    if '?' in mp3_url:
-                        mp3_url = mp3_url.split('?')[0]
-                    break
-            except Exception as e:
-                continue
+    import pdb
+    pdb.set_trace()
 
     full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(' by ')[0].strip()
