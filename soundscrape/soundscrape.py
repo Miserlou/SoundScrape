@@ -61,6 +61,8 @@ def main():
                         help='Use if downloading from Hive.co rather than SoundCloud')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
+    parser.add_argument('-L', '--login', type=str, default='',
+                        help='Set login')
     parser.add_argument('-d', '--downloadable', action='store_true',
                         help='Only fetch traks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
@@ -69,6 +71,8 @@ def main():
                         help='Organize saved songs in folders by artists')
     parser.add_argument('-p', '--path', type=str, default='',
                         help='Set directory path where downloads should be saved to')
+    parser.add_argument('-P', '--password', type=str, default='',
+                        help='Set password')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
     parser.add_argument('-k', '--keep', action='store_true',
@@ -109,6 +113,8 @@ def main():
         process_audiomack(vargs)
     elif 'hive.co' in artist_url or vargs['hive']:
         process_hive(vargs)
+    elif 'musicbed.com' in artist_url:
+        process_musicbed(vargs)
     else:
         process_soundcloud(vargs)
 
@@ -998,11 +1004,172 @@ def get_hive_data(url):
 
 
 ####################################################################
+# MusicBed
+####################################################################
+
+
+def process_musicbed(vargs):
+    """
+    Main MusicBed path.
+    """
+
+    # let's validate given MusicBed url
+    validated = False
+    if vargs['artist_url'].startswith( 'https://www.musicbed.com/' ):
+        splitted = vargs['artist_url'][len('https://www.musicbed.com/'):].split( '/' )
+        if len( splitted ) == 3:
+            if ( splitted[0] == 'artists' or splitted[0] == 'albums' or splitted[0] == 'songs' ) and splitted[2].isdigit():
+                validated = True
+
+    if not validated:
+        puts( colored.red( 'process_musicbed: you provided incorrect MusicBed url. Aborting.' ) )
+        puts( colored.white( 'Please make sure that url is either artist-url, album-url or song-url.' ) )
+        puts( colored.white( 'Example of correct artist-url: https://www.musicbed.com/artists/lights-motion/5188' ) )
+        puts( colored.white( 'Example of correct album-url:  https://www.musicbed.com/albums/be-still/2828' ) )
+        puts( colored.white( 'Example of correct song-url:   https://www.musicbed.com/songs/be-still/24540' ) )
+        return
+
+    filenames = scrape_musicbed_url(vargs['artist_url'], vargs['login'], vargs['password'], num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
+
+    if vargs['open']:
+        open_files(filenames)
+
+
+def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=False, custom_path=''):
+    """
+    Scrapes provided MusicBed url.
+    Uses requests' Session object in order to store cookies.
+    Requires login and password information.
+    If provided url is of pattern 'https://www.musicbed.com/artists/<string>/<number>' - a number of albums will be downloaded.
+    If provided url is of pattern 'https://www.musicbed.com/albums/<string>/<number>'  - only one album will be downloaded.
+    If provided url is of pattern 'https://www.musicbed.com/songs/<string>/<number>'   - will be treated as one album (but download only 1st track).
+    Metadata and urls are obtained from JavaScript data that's treated as JSON data.
+
+    Returns:
+        list: filenames to open
+    """
+
+    session = requests.Session()
+
+    response = session.get( url )
+    if response.status_code != 200:
+        puts( colored.red( 'scrape_musicbed_url: couldn\'t open provided url. Status code: ' + str( response.status_code ) + '. Aborting.' ) )
+        session.close()
+        return []
+
+    albums = []
+    # let's determine what url type we got
+    # '/artists/' - search for and download many albums
+    # '/albums/'  - means we're downloading 1 album
+    # '/songs/'   - means 1 album as well, but we're forcing num_tracks=1 in order to download only first relevant track
+    if url.startswith( 'https://www.musicbed.com/artists/' ):
+        # a hackjob code to get a list of available albums
+        main_index = 0
+        while response.text.find( 'https://www.musicbed.com/albums/', main_index ) != -1:
+            start_index = response.text.find( 'https://www.musicbed.com/albums/', main_index )
+            end_index   = response.text.find( '">', start_index )
+            albums.append( response.text[start_index:end_index] )
+            main_index = end_index
+    elif url.startswith( 'https://www.musicbed.com/songs/' ):
+        albums.append( url )
+        num_tracks = 1
+    else: # url.startswith( 'https://www.musicbed.com/albums/' )
+        albums.append( url )
+
+    # let's get our token and try to login (csrf_token seems to be present on every page)
+    token = response.text.split( 'var csrf_token = "' )[1].split( '";' )[0]
+    details = { '_token': token, 'login': login, 'password': password }
+    response = session.post( 'https://www.musicbed.com/ajax/login', data=details )
+    if response.status_code != 200:
+        puts( colored.red( 'scrape_musicbed_url: couldn\'t login. Aborting. ' ) + colored.white( 'Couldn\'t access login page.' ) )
+        session.close()
+        return []
+    login_response_data = demjson.decode( response.text )
+    if not login_response_data['body']['status']:
+        puts( colored.red( 'scrape_musicbed_url: couldn\'t login. Aborting. ' ) + colored.white( 'Did you provide correct login and password?' ) )
+        session.close()
+        return []
+
+    # now let's actually scrape collected pages
+    filenames = []
+    for each_album_url in albums:
+        response = session.get( each_album_url )
+        if response.status_code != 200:
+            puts_safe( colored.red( 'scrape_musicbed_url: couldn\'t open url: ' + each_album_url +
+                                    '. Status code: ' + str( response.status_code ) + '. Skipping.' ) )
+            continue
+
+        # actually not a JSON, but a JS object, but so far so good
+        json = response.text.split( 'App.components.SongRows = ' )[1].split( '</script>' )[0]
+        data = demjson.decode( json )
+
+        song_count = 1
+        for each_song in data['loadedSongs']:
+            if song_count > num_tracks:
+                break
+
+            try:
+                url, params = each_song['playback_url'].split( '?' )
+
+                details = dict()
+                for each_param in params.split( '&' ):
+                    name, value = each_param.split( '=' )
+                    details.update( { name: value } )
+                # musicbed warns about it if it's not fixed
+                details['X-Amz-Credential'] = details['X-Amz-Credential'].replace( '%2F', '/' )
+
+                directory = custom_path
+                if folders:
+                    sanitized_artist = sanitize_filename( each_song['album']['data']['artist']['data']['name'] )
+                    sanitized_album  = sanitize_filename( each_song['album']['data']['name'] )
+                    directory = join( directory, sanitized_artist + ' - ' + sanitized_album )
+                    if not exists( directory ):
+                        mkdir( directory )
+                filename = join( directory, str( song_count ) + ' - ' + sanitize_filename( each_song['name'] ) + '.mp3' )
+
+                if exists( filename ):
+                    puts_safe( colored.yellow( 'Skipping' ) + colored.white( ': ' + each_song['name'] + ' - it already exists!' ) )
+                    song_count += 1
+                    continue
+
+                puts_safe( colored.green( 'Downloading' ) + colored.white( ': ' + each_song['name'] ) )
+                path = download_file( url, filename, session=session, params=details )
+
+                # example of genre_string:
+                # "<a href=\"https://www.musicbed.com/genres/ambient/2\">Ambient</a> <a href=\"https://www.musicbed.com/genres/cinematic/4\">Cinematic</a>"
+                genres = ''
+                for each in each_song['genre_string'].split( '</a>' ):
+                    if ( each != "" ):
+                        genres += each.split( '">' )[1] + '/'
+                genres = genres[:-1] # removing last '/
+
+                tag_file(path,
+                         each_song['album']['data']['artist']['data']['name'],
+                         each_song['name'],
+                         album=each_song['album']['data']['name'],
+                         year=int( each_song['album']['data']['released_at'].split( '-' )[0] ),
+                         genre=genres,
+                         artwork_url=each_song['album']['data']['imageObject']['data']['paths']['original'],
+                         track_number=str( song_count ),
+                         url=each_song['song_url'])
+                
+                filenames.append( path )
+                song_count += 1
+            except:
+                puts_safe( colored.red( 'Problem downloading ' ) + colored.white( each_song['name'] ) + '. Skipping.' )
+                song_count += 1
+
+    session.close()
+
+    return filenames
+
+
+####################################################################
 # File Utility
 ####################################################################
 
 
-def download_file(url, path):
+def download_file(url, path, session=None, params=None):
     """
     Download an individual file.
     """
@@ -1013,7 +1180,12 @@ def download_file(url, path):
     # Use a temporary file so that we don't import incomplete files.
     tmp_path = path + '.tmp'
 
-    r = requests.get(url, stream=True)
+    if session and params:
+        r = session.get( url, params=params, stream=True )
+    elif session and not params:
+        r = session.get( url, stream=True )
+    else:
+        r = requests.get(url, stream=True)
     with open(tmp_path, 'wb') as f:
         total_length = int(r.headers.get('content-length', 0))
         for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
