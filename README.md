@@ -156,6 +156,15 @@ Just for fun, SoundScrape can also download individual songs from Audiomack. Not
 soundscrape -a http://www.audiomack.com/song/bottomfeedermusic/top-shottas
 ```
 
+MusicBed
+--------
+
+For some strange reason, it also works for MusicBed.com. Thanks @brachna for this feature.
+
+```bash
+soundscrape https://www.musicbed.com/albums/be-still/2828
+```
+
 Opening Files
 --------
 
@@ -168,4 +177,4 @@ soundscrape lorn -of
 Issues
 -------
 
-There's probably a lot more that can be done to improve this. Please file issues if you find them! 
+There's probably a lot more that can be done to improve this. Please file issues if you find them!

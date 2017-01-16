@@ -61,7 +61,7 @@ def main():
                         help='Use if downloading from Hive.co rather than SoundCloud')
     parser.add_argument('-l', '--likes', action='store_true',
                         help='Download all of a user\'s Likes.')
-    parser.add_argument('-L', '--login', type=str, default='',
+    parser.add_argument('-L', '--login', type=str, default='soundscrape123@mailinator.com',
                         help='Set login')
     parser.add_argument('-d', '--downloadable', action='store_true',
                         help='Only fetch traks with a Downloadable link.')
@@ -71,7 +71,7 @@ def main():
                         help='Organize saved songs in folders by artists')
     parser.add_argument('-p', '--path', type=str, default='',
                         help='Set directory path where downloads should be saved to')
-    parser.add_argument('-P', '--password', type=str, default='',
+    parser.add_argument('-P', '--password', type=str, default='soundscraperocks',
                         help='Set password')
     parser.add_argument('-o', '--open', action='store_true',
                         help='Open downloaded files after downloading.')
@@ -1152,7 +1152,7 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=Fa
                          artwork_url=each_song['album']['data']['imageObject']['data']['paths']['original'],
                          track_number=str( song_count ),
                          url=each_song['song_url'])
-                
+
                 filenames.append( path )
                 song_count += 1
             except:
