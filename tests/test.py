@@ -113,6 +113,9 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
     def test_mixcloud(self):
+        """
+        MixCloud is being blocked from Travis, interestingly.
+        """
 
         for f in glob.glob('*.mp3'):
            os.unlink(f)
