@@ -11,7 +11,7 @@ import sys
 import urllib
 
 from clint.textui import colored, puts, progress
-from datetime import datetime
+from datetime import datetime, timedelta
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
@@ -67,6 +67,8 @@ def main():
                         help='Only fetch tracks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
+    parser.add_argument('-T', '--time-limit', type=str, default='',
+                        help='Upper limit of time a track can be for it to be downloaded (SoundCloud Only)')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
     parser.add_argument('-p', '--path', type=str, default='',
@@ -288,7 +290,7 @@ def process_soundcloud(vargs):
                                 filenames.append(filename)
 
         if not aggressive:
-            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'],
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'], vargs['time_limit'],
                                         id3_extras=id3_extras)
 
     if vargs['open']:
@@ -363,7 +365,18 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}):
+def resolve_time_limit(time_limit=""):
+    if not time_limit:
+        return 0
+    return sum(int(x) * 60 ** i for i,x in enumerate(reversed(time_limit.split(":"))))
+
+def printable_duration(duration=None):
+    if not duration:
+        return ""
+    duration_temp = duration/1000
+    return str(timedelta(seconds=duration_temp))
+
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', time_limit=None, id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -416,6 +429,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
             else:
                 track_artist = sanitize_filename(track['user']['username'])
                 track_title = sanitize_filename(track['title'])
+                track_duration = tracks[i].duration
                 track_filename = track_artist + ' - ' + track_title + '.mp3'
 
                 if folders:
@@ -429,6 +443,11 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 if exists(track_filename):
                     puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
+
+                if not not time_limit:
+                    if track_duration > resolve_time_limit(time_limit)*1000 and resolve_time_limit(time_limit) is not 0:
+                        puts_safe(colored.yellow("Track (") + colored.white(track_title) + colored.yellow(") longer than set time limit (was ") + colored.red(printable_duration(track_duration)) + colored.yellow(" with limit ") + colored.red(printable_duration(resolve_time_limit(time_limit)*1000)) + colored.yellow(")"))
+                        continue
 
                 puts_safe(colored.green("Downloading") + colored.white(": " + track['title']))
                 if track.get('direct', False):
