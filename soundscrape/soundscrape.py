@@ -113,8 +113,8 @@ def main():
         process_audiomack(vargs)
     elif 'hive.co' in artist_url or vargs['hive']:
         process_hive(vargs)
-    elif 'musicbed.com' in artist_url:
-        process_musicbed(vargs)
+    # elif 'musicbed.com' in artist_url:
+    #     process_musicbed(vargs)
     else:
         process_soundcloud(vargs)
 
@@ -890,12 +890,17 @@ def get_audiomack_data(url):
     """
 
     data = {}
-    request = requests.get(url)
+    request = requests.get(url).text
+    tmp = list(filter(lambda  x: "window.__INITIAL_STATE__" in x, request.split("<script>")))[0]
+    tmp = tmp.split('window.__INITIAL_STATE__ =')[1].split('</script>')[0].strip()
+    tmp = demjson.decode(tmp[:-1])
+    info = tmp['musicSong']['info']
 
-    mp3_url = request.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
-    artist = request.text.split('<span class="artist">')[1].split('</span>')[0].strip()
-    title = request.text.split('<span class="artist">')[1].split('</span>')[1].split('</h1>')[0].strip()
-    artwork_url = request.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
+
+    mp3_url = info['download_url']
+    artist = info['artist']
+    title = info['title']
+    artwork_url = info['image']
 
     data['mp3_url'] = mp3_url
     data['title'] = title
