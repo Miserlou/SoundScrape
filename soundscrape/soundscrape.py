@@ -64,7 +64,7 @@ def main():
     parser.add_argument('-L', '--login', type=str, default='soundscrape123@mailinator.com',
                         help='Set login')
     parser.add_argument('-d', '--downloadable', action='store_true',
-                        help='Only fetch traks with a Downloadable link.')
+                        help='Only fetch tracks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
     parser.add_argument('-f', '--folders', action='store_true',
