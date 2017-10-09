@@ -26,7 +26,7 @@ CLIENT_ID = '175c043157ffae2c6d5fed16c3d95a4c'
 CLIENT_SECRET = '99a51990bd81b6a82c901d4cc6828e46'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
-AGGRESSIVE_CLIENT_ID = 'fDoItMDbsbZz8dY16ZzARCZmzgHBPotA'
+AGGRESSIVE_CLIENT_ID = 'OmTFHKYSMLFqnu2HHucmclAptedxWXkq'
 APP_VERSION = '1481046241'
 
 ####################################################################
@@ -457,6 +457,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 filenames.append(filename)
         except Exception as e:
             puts_safe(colored.red("Problem downloading ") + colored.white(track['title']))
+            puts_safe(e)
 
     return filenames
 
