@@ -22,8 +22,8 @@ from os import access, mkdir, W_OK
 ####################################################################
 
 # Please be nice with this!
-CLIENT_ID = '175c043157ffae2c6d5fed16c3d95a4c'
-CLIENT_SECRET = '99a51990bd81b6a82c901d4cc6828e46'
+CLIENT_ID = 'a3dd183a357fcff9a6943c0d65664087'
+CLIENT_SECRET = '7e10d33e967ad42574124977cf7fa4b7'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 AGGRESSIVE_CLIENT_ID = 'OmTFHKYSMLFqnu2HHucmclAptedxWXkq'
@@ -219,7 +219,7 @@ def process_soundcloud(vargs):
         tagged = tag_file(filename,
                  artist=track_data['artist'],
                  title=track_data['title'],
-                 year='2016',
+                 year='2018',
                  genre='',
                  album='',
                  artwork_url='')
@@ -232,6 +232,7 @@ def process_soundcloud(vargs):
         filenames.append(filename)
 
     else:
+
         aggressive = False
 
         # This is is likely a 'likes' page.
@@ -267,6 +268,7 @@ def process_soundcloud(vargs):
                     aggressive = True
                     filenames = []
 
+                    # this might be buggy
                     data = get_soundcloud_api2_data(artist_id)
 
                     for track in data['collection']:
@@ -431,6 +433,8 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                     continue
 
                 puts_safe(colored.green("Downloading") + colored.white(": " + track['title']))
+
+
                 if track.get('direct', False):
                     location = track['stream_url']
                 else:
