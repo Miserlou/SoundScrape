@@ -1316,7 +1316,7 @@ def puts_safe(text):
         else:
             puts(text.encode(sys.stdout.encoding, errors='replace').decode())
     else:
-        puts(text)
+        puts(str(text))
 
 
 ####################################################################
