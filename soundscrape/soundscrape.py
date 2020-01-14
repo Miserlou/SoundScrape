@@ -461,7 +461,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 filenames.append(filename)
         except Exception as e:
             puts_safe(colored.red("Problem downloading ") + colored.white(track['title']))
-            puts_safe(e)
+            puts_safe(str(e))
 
     return filenames
 
