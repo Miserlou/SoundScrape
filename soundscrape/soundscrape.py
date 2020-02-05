@@ -545,7 +545,13 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
+    filenames = scrape_bandcamp_url(
+        bc_url,
+        num_tracks=vargs.get('num_tracks'),
+        folders=vargs.get('folders'),
+        custom_path=vargs.get('path'),
+        custom_dir=vargs.get('custom_dir')
+    )
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
@@ -565,7 +571,7 @@ def process_bandcamp(vargs):
 
 
 # Largely borrowed from Ronier's bandcampscrape
-def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=''):
+def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path='', custom_dir=''):
     """
     Pull out artist and track info from a Bandcamp URL.
 
@@ -587,10 +593,13 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     album_name = album_data["album_name"]
 
     if folders:
-        if album_name:
-            directory = artist + " - " + album_name
+        if custom_dir:
+            directory = custom_dir
         else:
-            directory = artist
+            if album_name:
+                directory = artist + " - " + album_name
+            else:
+                directory = artist
         directory = sanitize_filename(directory)
         directory = join(custom_path, directory)
         if not exists(directory):
