@@ -9,9 +9,10 @@ import requests
 import soundcloud
 import sys
 import urllib
+import glob
 
 from clint.textui import colored, puts, progress
-from datetime import datetime
+from datetime import datetime, timedelta
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
@@ -22,8 +23,8 @@ from os import access, mkdir, W_OK
 ####################################################################
 
 # Please be nice with this!
-CLIENT_ID = 'a3dd183a357fcff9a6943c0d65664087'
-CLIENT_SECRET = '7e10d33e967ad42574124977cf7fa4b7'
+CLIENT_ID = '175c043157ffae2c6d5fed16c3d95a4c'
+CLIENT_SECRET = '99a51990bd81b6a82c901d4cc6828e46'
 MAGIC_CLIENT_ID = 'b45b1aa10f1ac2941910a7f0d10f8e28'
 
 AGGRESSIVE_CLIENT_ID = 'OmTFHKYSMLFqnu2HHucmclAptedxWXkq'
@@ -67,6 +68,8 @@ def main():
                         help='Only fetch tracks with a Downloadable link.')
     parser.add_argument('-t', '--track', type=str, default='',
                         help='The name of a specific track by an artist')
+    parser.add_argument('-T', '--time-limit', type=str, default='',
+                        help='Upper limit of time a track can be for it to be downloaded (SoundCloud Only)')
     parser.add_argument('-f', '--folders', action='store_true',
                         help='Organize saved songs in folders by artists')
     parser.add_argument('-p', '--path', type=str, default='',
@@ -79,6 +82,10 @@ def main():
                         help='Keep 30-second preview tracks')
     parser.add_argument('-v', '--version', action='store_true', default=False,
                         help='Display the current version of SoundScrape')
+    parser.add_argument('-A', '--avoid-duplicates', action='store_true', default=False,
+                        help='Avoids downloading files that have similar filenames to existing files in the working directory, asks for desired behavior when encountered')
+    parser.add_argument('-s', '--avoid-duplicates-strong', action='store_true', default=False,
+                        help='Avoids downloading files that have similar filenames to existing files in the working directory, automatically skips downloading')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -219,7 +226,7 @@ def process_soundcloud(vargs):
         tagged = tag_file(filename,
                  artist=track_data['artist'],
                  title=track_data['title'],
-                 year='2018',
+                 year='2016',
                  genre='',
                  album='',
                  artwork_url='')
@@ -232,7 +239,6 @@ def process_soundcloud(vargs):
         filenames.append(filename)
 
     else:
-
         aggressive = False
 
         # This is is likely a 'likes' page.
@@ -268,7 +274,6 @@ def process_soundcloud(vargs):
                     aggressive = True
                     filenames = []
 
-                    # this might be buggy
                     data = get_soundcloud_api2_data(artist_id)
 
                     for track in data['collection']:
@@ -290,7 +295,10 @@ def process_soundcloud(vargs):
                                 filenames.append(filename)
 
         if not aggressive:
-            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'],
+            time_limit = ''
+            if 'time_limit' in vargs:
+                time_limit = vargs['time_limit']
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'], time_limit, vargs['avoid_duplicates'], vargs['avoid_duplicates_strong'],
                                         id3_extras=id3_extras)
 
     if vargs['open']:
@@ -365,7 +373,18 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}):
+def resolve_time_limit(time_limit=""):
+    if not time_limit:
+        return 0
+    return sum(int(x) * 60 ** i for i,x in enumerate(reversed(time_limit.split(":"))))
+
+def printable_duration(duration=None):
+    if not duration:
+        return ""
+    duration_temp = duration/1000
+    return str(timedelta(seconds=duration_temp))
+
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', time_limit=None, avoid_duplicates=False, avoid_duplicates_strong=False, id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -418,6 +437,7 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
             else:
                 track_artist = sanitize_filename(track['user']['username'])
                 track_title = sanitize_filename(track['title'])
+                track_duration = tracks[i].duration
                 track_filename = track_artist + ' - ' + track_title + '.mp3'
 
                 if folders:
@@ -428,13 +448,44 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 else:
                     track_filename = join(custom_path, track_filename)
 
-                if exists(track_filename):
+                if exists(track_filename) or exists(track_filename[:-3] + 'wav'):
                     puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
 
+                if avoid_duplicates or avoid_duplicates_strong:
+                    globResults = glob.glob('*' + track_title + '*')
+                    if globResults:
+                        if not avoid_duplicates_strong:
+                            answer = "x"
+                            while not (answer.lower() == "y" or answer.lower() == "n"):
+                                puts_safe(colored.red("Similar filename(s) found:"))
+                                puts_safe(colored.white(track_filename))
+                                puts_safe(colored.red("vs existing files:"))
+                                for f in globResults: 
+                                    puts_safe(colored.white(f))
+        
+        
+                                puts_safe(colored.yellow("Would you like to download anyway? (y/n): "))
+                                answer = raw_input()
+                                if answer.lower() == "y":
+                                    puts_safe(colored.green("Continuing download..."))
+                                elif answer.lower() == "n":
+                                    puts_safe(colored.green("Download aborted"))
+                                else:
+                                    puts_safe(colored.red("Please only input \"y\" or \"n\""))
+                            if answer.lower() == "n":
+                                continue
+                        else:
+                            puts_safe(colored.green("Similar filename found for ") + colored.white(track_title) + colored.green(" Download aborted"))
+                            continue
+
+
+                if not not time_limit:
+                    if track_duration > resolve_time_limit(time_limit)*1000 and resolve_time_limit(time_limit) is not 0:
+                        puts_safe(colored.yellow("Track (") + colored.white(track_title) + colored.yellow(") longer than set time limit (was ") + colored.red(printable_duration(track_duration)) + colored.yellow(" with limit ") + colored.red(printable_duration(resolve_time_limit(time_limit)*1000)) + colored.yellow(")"))
+                        continue
+
                 puts_safe(colored.green("Downloading") + colored.white(": " + track['title']))
-
-
                 if track.get('direct', False):
                     location = track['stream_url']
                 else:
