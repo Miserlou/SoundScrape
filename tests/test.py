@@ -35,7 +35,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/fzpz/revised', 'keep': True}
+        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/fzpz/revised', 'keep': True, 'plays': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -48,7 +48,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'puptheband', 'keep': False}
+        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'puptheband', 'keep': False, 'plays': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -62,7 +62,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/lostdogz/snuggles-chapstick', 'keep': False}
+        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/lostdogz/snuggles-chapstick', 'keep': False, 'plays': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -92,7 +92,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://atenrays.bandcamp.com/track/who-u-think'}
+        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://atenrays.bandcamp.com/track/who-u-think', 'plays': False}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
@@ -105,7 +105,7 @@ class TestSoundscrape(unittest.TestCase):
            os.unlink(f)
 
         mp3_count = len(glob.glob1('', "*.mp3"))
-        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit'}
+        vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit', 'plays': False}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)

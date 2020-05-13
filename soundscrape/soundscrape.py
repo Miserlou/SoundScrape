@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 from __future__ import unicode_literals
 
+import unicodedata
 import argparse
 import demjson
 import os
@@ -10,6 +11,7 @@ import soundcloud
 import sys
 import urllib
 
+from glob import glob
 from clint.textui import colored, puts, progress
 from datetime import datetime
 from mutagen.mp3 import MP3, EasyMP3
@@ -77,6 +79,8 @@ def main():
                         help='Open downloaded files after downloading.')
     parser.add_argument('-k', '--keep', action='store_true',
                         help='Keep 30-second preview tracks')
+    parser.add_argument('-s', '--plays', action='store_true',
+                        help='Add number of plays to the file name (SoundCloud playlists only)')
     parser.add_argument('-v', '--version', action='store_true', default=False,
                         help='Display the current version of SoundScrape')
 
@@ -133,6 +137,7 @@ def process_soundcloud(vargs):
     track_permalink = vargs['track']
     keep_previews = vargs['keep']
     folders = vargs['folders']
+    add_play_count = vargs['plays']
 
     id3_extras = {}
     one_track = False
@@ -291,7 +296,8 @@ def process_soundcloud(vargs):
 
         if not aggressive:
             filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'],
-                                        id3_extras=id3_extras)
+                                        id3_extras=id3_extras,
+                                        add_play_count=add_play_count)
 
     if vargs['open']:
         open_files(filenames)
@@ -365,7 +371,17 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}):
+def escape_glob(path):
+    transdict = {
+            '[': '[[]',
+            ']': '[]]',
+            '*': '[*]',
+            '?': '[?]',
+            }
+    rc = re.compile('|'.join(map(re.escape, transdict)))
+    return rc.sub(lambda m: transdict[m.group(0)], path)
+
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}, add_play_count=False):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -374,6 +390,10 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
     filenames = []
 
     for i, track in enumerate(tracks):
+        plays = ""
+
+        if add_play_count and track.has_key('playback_count'):
+            plays = str(track['playback_count']) + " - "
 
         # "Track" and "Resource" objects are actually different,
         # even though they're the same.
@@ -418,7 +438,8 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
             else:
                 track_artist = sanitize_filename(track['user']['username'])
                 track_title = sanitize_filename(track['title'])
-                track_filename = track_artist + ' - ' + track_title + '.mp3'
+                actual_track_filename = unicodedata.normalize('NFD', track_artist + ' - ' + track_title + '.mp3')
+                track_filename = plays + actual_track_filename
 
                 if folders:
                     track_artist_path = join(custom_path, track_artist)
@@ -428,7 +449,13 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
                 else:
                     track_filename = join(custom_path, track_filename)
 
-                if exists(track_filename):
+                if add_play_count:
+                    glob_pattern = "*" + escape_glob(actual_track_filename)
+                    file_exists = len(glob(glob_pattern)) > 0
+                else:
+                    file_exists = exists(actual_track_filename)
+
+                if file_exists:
                     puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
                     continue
 
