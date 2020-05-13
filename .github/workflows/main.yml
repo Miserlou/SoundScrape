@@ -1,4 +1,4 @@
-name: SoundScape CI
+name: SoundScrape CI
 
 on:
   push:
