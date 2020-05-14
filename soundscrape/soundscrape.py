@@ -328,7 +328,7 @@ def download_track(
     hard_track_url = get_hard_track_url(track["id"])
 
     # We have no info on this track whatsoever.
-    if not "title" in track:
+    if "title" not in track:
         return None
 
     if not keep_previews:
@@ -1323,7 +1323,7 @@ def tag_file(
                 new_artwork_url = artwork_url.replace("-large", "-t500x500")
                 try:
                     image_data = requests.get(new_artwork_url).content
-                except Exception as e:
+                except:
                     # No very large image available.
                     image_data = requests.get(artwork_url).content
             else:
@@ -1345,7 +1345,7 @@ def tag_file(
 
         return True
 
-    except Exception as e:
+    except:
         puts(colored.red("Problem tagging file: ") + colored.white("Is this file a WAV?"))
         return False
 
