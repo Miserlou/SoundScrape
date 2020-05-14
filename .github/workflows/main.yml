@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3{0}5', '3{0}6', '3{0}7', '3{0}8']
+        python-version: ['3{0}6', '3{0}7', '3{0}8']
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ format(matrix.python-version, '.') }}
