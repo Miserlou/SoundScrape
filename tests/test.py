@@ -1,21 +1,10 @@
 import glob
 import os
-import re
-import string
-import sys
 import unittest
-
-import nose
-from nose import case
-from nose.pyversion import unbound_method
-from nose import util
 
 from soundscrape.soundscrape import get_client
 from soundscrape.soundscrape import process_soundcloud
 from soundscrape.soundscrape import process_bandcamp
-from soundscrape.soundscrape import process_mixcloud
-from soundscrape.soundscrape import process_audiomack
-from soundscrape.soundscrape import process_musicbed
 
 
 class TestSoundscrape(unittest.TestCase):
@@ -186,10 +175,6 @@ class TestSoundscrape(unittest.TestCase):
     #        os.unlink(f)
 
     def test_mixcloud(self):
-        """
-        MixCloud is being blocked from Travis, interestingly.
-        """
-
         for f in glob.glob("*.mp3"):
             os.unlink(f)
 

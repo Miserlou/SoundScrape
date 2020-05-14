@@ -37,9 +37,7 @@ def main():
     Main function.
 
     Converts arguments to Python and processes accordingly.
-
     """
-
     # Hack related to #58
     if sys.platform == "win32":
         os.system("chcp 65001")
@@ -132,10 +130,7 @@ def main():
 
 
 def process_soundcloud(vargs):
-    """
-    Main SoundCloud path.
-    """
-
+    """Main SoundCloud path."""
     artist_url = vargs["artist_url"]
     track_permalink = vargs["track"]
     keep_previews = vargs["keep"]
@@ -306,9 +301,7 @@ def process_soundcloud(vargs):
 
 
 def get_client():
-    """
-    Return a new SoundCloud Client object.
-    """
+    """Return a new SoundCloud Client object."""
     client = soundcloud.Client(client_id=CLIENT_ID)
     return client
 
@@ -316,10 +309,7 @@ def get_client():
 def download_track(
     track, album_name="", keep_previews=False, folders=False, filenames=[], custom_path="",
 ):
-    """
-    Given a track, force scrape it.
-    """
-
+    """Given a track, force scrape it."""
     hard_track_url = get_hard_track_url(track["id"])
 
     # We have no info on this track whatsoever.
@@ -382,11 +372,7 @@ def download_track(
 def download_tracks(
     client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path="", id3_extras={},
 ):
-    """
-    Given a list of tracks, iteratively download all of them.
-
-    """
-
+    """Given a list of tracks, iteratively download all of them."""
     filenames = []
 
     for i, track in enumerate(tracks):
@@ -424,7 +410,7 @@ def download_tracks(
                         t_track["stream_url"] = response["http_mp3_128_url"]
 
                 track = t_track
-            except Exception as e:
+            except:
                 puts_safe(colored.white(track.title) + colored.red(" is not downloadable."))
                 continue
 
@@ -494,7 +480,6 @@ def get_soundcloud_data(url):
         dict: of audio data
 
     """
-
     data = {}
 
     request = requests.get(url)
@@ -508,10 +493,7 @@ def get_soundcloud_data(url):
 
 
 def get_soundcloud_api2_data(artist_id):
-    """
-    Scrape the new API. Returns the parsed JSON response.
-    """
-
+    """Scrape the new API. Returns the parsed JSON response."""
     v2_url = "https://api-v2.soundcloud.com/stream/users/%s?limit=500&client_id=%s&app_version=%s" % (
         artist_id,
         AGGRESSIVE_CLIENT_ID,
@@ -524,10 +506,7 @@ def get_soundcloud_api2_data(artist_id):
 
 
 def get_soundcloud_api_playlist_data(playlist_id):
-    """
-    Scrape the new API. Returns the parsed JSON response.
-    """
-
+    """Scrape the new API. Returns the parsed JSON response."""
     url = (
         "https://api.soundcloud.com/playlists/%s?representation=full&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=1467724310"
         % (playlist_id)
@@ -539,10 +518,7 @@ def get_soundcloud_api_playlist_data(playlist_id):
 
 
 def get_hard_track_url(item_id):
-    """
-    Hard-scrapes a track.
-    """
-
+    """Hard-scrapes a track."""
     streams_url = "https://api.soundcloud.com/i1/tracks/%s/streams/?client_id=%s&app_version=%s" % (
         item_id,
         AGGRESSIVE_CLIENT_ID,
@@ -564,10 +540,7 @@ def get_hard_track_url(item_id):
 
 
 def process_bandcamp(vargs):
-    """
-    Main BandCamp path.
-    """
-
+    """Main BandCamp path."""
     artist_url = vargs["artist_url"]
 
     if "bandcamp.com" in artist_url or ("://" in artist_url and vargs["bandcamp"]):
@@ -603,8 +576,8 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
 
     Returns:
         list: filenames to open
-    """
 
+    """
     filenames = []
     album_data = get_bandcamp_metadata(url)
 
@@ -629,10 +602,8 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
             mkdir(directory)
 
     for i, track in enumerate(album_data["trackinfo"]):
-
         if i > num_tracks - 1:
             continue
-
         try:
             track_name = track["title"]
             if track["track_num"]:
@@ -688,6 +659,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
 def get_bandcamp_metadata(url):
     """
     Read information from the Bandcamp JavaScript object.
+
     The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums),
     or a JSON if we can already parse album/track info from the given url.
     The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
@@ -702,7 +674,7 @@ def get_bandcamp_metadata(url):
         output = demjson.decode(sloppy_json)
     # if the JSON parser failed, we should consider it's a "/music" page,
     # so we generate a list of albums/tracks and return it immediately
-    except Exception as e:
+    except:
         regex_all_albums = r'<a href="(/(?:album|track)/[^>]+)">'
         all_albums = re.findall(regex_all_albums, request.text, re.MULTILINE)
         album_url_list = list()
@@ -743,10 +715,7 @@ def get_bandcamp_metadata(url):
 
 
 def process_mixcloud(vargs):
-    """
-    Main MixCloud path.
-    """
-
+    """Main MixCloud path."""
     artist_url = vargs["artist_url"]
 
     if "mixcloud.com" in artist_url:
@@ -766,11 +735,12 @@ def process_mixcloud(vargs):
 
 def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path=""):
     """
+    Pull out artist and track info from a MixCloud URL.
+
     Returns:
         list: filenames to open
 
     """
-
     try:
         data = get_mixcloud_data(mc_url)
     except Exception as e:
@@ -822,11 +792,10 @@ def get_mixcloud_data(url):
         dict: containing audio data
 
     """
-
     data = {}
     request = requests.get(url)
     preview_mp3_url = request.text.split('m-preview="')[1].split('" m-preview-light')[0]
-    song_uuid = request.text.split('m-preview="')[1].split('" m-preview-light')[0].split("previews/")[1].split(".mp3")[0]
+    song_uuid = preview_mp3_url.split("previews/")[1].split(".mp3")[0]
 
     # Fish for the m4a..
     for server in range(1, 23):
@@ -837,7 +806,7 @@ def get_mixcloud_data(url):
                 if "?" in mp3_url:
                     mp3_url = mp3_url.split("?")[0]
                 break
-        except Exception as e:
+        except:
             continue
 
     full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
@@ -862,10 +831,7 @@ def get_mixcloud_data(url):
 
 
 def process_audiomack(vargs):
-    """
-    Main Audiomack path.
-    """
-
+    """Main Audiomack path."""
     artist_url = vargs["artist_url"]
 
     if "audiomack.com" in artist_url:
@@ -885,11 +851,12 @@ def process_audiomack(vargs):
 
 def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_path=""):
     """
+    Pull out artist and track info from a Audiomack URL.
+
     Returns:
         list: filenames to open
 
     """
-
     try:
         data = get_audiomack_data(mc_url)
     except Exception as e:
@@ -930,13 +897,12 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_p
 
 def get_audiomack_data(url):
     """
-    Scrapes a Mixcloud page for a track's important information.
+    Scrapes a Auidomack page for a track's important information.
 
     Returns:
         dict: containing audio data
 
     """
-
     data = {}
     request = requests.get(url)
 
@@ -960,11 +926,7 @@ def get_audiomack_data(url):
 
 
 def process_musicbed(vargs):
-    """
-    Main MusicBed path.
-    """
-
-    # let's validate given MusicBed url
+    """Main MusicBed path."""
     validated = False
     if vargs["artist_url"].startswith("https://www.musicbed.com/"):
         splitted = vargs["artist_url"][len("https://www.musicbed.com/") :].split("/")
@@ -995,7 +957,8 @@ def process_musicbed(vargs):
 
 def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=False, custom_path=""):
     """
-    Scrapes provided MusicBed url.
+    Scrapes provided MusicBed URL.
+
     Uses requests' Session object in order to store cookies.
     Requires login and password information.
     If provided url is of pattern 'https://www.musicbed.com/artists/<string>/<number>' - a number of albums will be downloaded.
@@ -1005,8 +968,8 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=Fa
 
     Returns:
         list: filenames to open
-    """
 
+    """
     session = requests.Session()
 
     response = session.get(url)
@@ -1144,10 +1107,7 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=Fa
 
 
 def download_file(url, path, session=None, params=None):
-    """
-    Download an individual file.
-    """
-
+    """Download an individual file."""
     if url[0:2] == "//":
         url = "https://" + url[2:]
 
@@ -1188,8 +1148,8 @@ def tag_file(
         track_number (str):
         filename (str):
         url (str):
-    """
 
+    """
     try:
         audio = EasyMP3(filename)
         audio.tags = None
@@ -1249,9 +1209,7 @@ def tag_file(
 
 
 def open_files(filenames):
-    """
-    Call the system 'open' command on a file.
-    """
+    """Call the system 'open' command on a file."""
     command = ["open"] + filenames
     process = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
@@ -1263,6 +1221,7 @@ def sanitize_filename(filename):
 
     Returns:
         str:
+
     """
     sanitized_filename = re.sub(r'[/\\:*?"<>|]', "-", filename)
     sanitized_filename = sanitized_filename.replace("&", "and")
