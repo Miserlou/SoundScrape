@@ -1,16 +1,7 @@
 import os
-import setuptools
 import soundscrape
-import sys
 
 from setuptools import setup
-
-# To support 2/3 installation
-setup_version = int(setuptools.__version__.split(".")[0])
-if setup_version < 18:
-    print("Please upgrade your setuptools to install SoundScrape: ")
-    print("pip install -U pip wheel setuptools")
-    quit()
 
 # Set external files
 try:
@@ -31,7 +22,6 @@ setup(
     version=soundscrape.__version__,
     packages=["soundscrape"],
     install_requires=required,
-    extras_require={':python_version < "3.0"': ["wsgiref>=0.1.2",],},
     include_package_data=True,
     license="MIT License",
     description="Scrape an artist from SoundCloud",
@@ -45,10 +35,9 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     ],
