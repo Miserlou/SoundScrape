@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3{0}5", "3{0}6", "3{0}7", "3{0}8"]
+        python-version: ['3{0}5', '3{0}6', '3{0}7', '3{0}8']
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ format(matrix.python-version, ".") }}
+    - name: Set up Python ${{ format(matrix.python-version, '.') }}
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ format(matrix.python-version, ".") }}
+        python-version: ${{ format(matrix.python-version, '.') }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -25,7 +25,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Black code formatting
       run: |
-        black --check --line-length 127 --target-version py${{ format(matrix.python-version, "") }} .
+        black --check --line-length 127 --target-version py${{ format(matrix.python-version, '') }} .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
