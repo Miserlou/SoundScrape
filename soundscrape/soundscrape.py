@@ -138,8 +138,10 @@ def process_soundcloud(vargs):
 
     id3_extras = {}
     one_track = False
+    num_tracks = 1
     likes = False
-    client = get_client()
+    client = soundcloud.Client(client_id=CLIENT_ID)
+
     if "soundcloud" not in artist_url.lower():
         if vargs["group"]:
             artist_url = "https://soundcloud.com/groups/" + artist_url.lower()
@@ -155,9 +157,7 @@ def process_soundcloud(vargs):
         artist_url = artist_url[0 : artist_url.find("/likes")]
         likes = True
 
-    if one_track:
-        num_tracks = 1
-    else:
+    if not one_track:
         num_tracks = vargs["num_tracks"]
 
     try:
@@ -185,9 +185,8 @@ def process_soundcloud(vargs):
         else:
             resolved = client.get("/resolve", url=artist_url, limit=200)
 
-    except Exception as e:  # HTTPError?
-
-        # SoundScrape is trying to prevent us from downloading this.
+    except Exception as e:
+        # SoundCloud is trying to prevent us from downloading this.
         # We're going to have to stop trusting the API/client and
         # do all our own scraping. Boo.
 
@@ -230,18 +229,13 @@ def process_soundcloud(vargs):
         filenames.append(filename)
 
     else:
-
         aggressive = False
 
         # This is is likely a 'likes' page.
         if not hasattr(resolved, "kind"):
             tracks = resolved
         else:
-            if resolved.kind == "artist":
-                artist = resolved
-                artist_id = str(artist.id)
-                tracks = client.get("/users/" + artist_id + "/tracks", limit=200)
-            elif resolved.kind == "playlist":
+            if resolved.kind == "playlist":
                 id3_extras["album"] = resolved.title
                 if resolved.tracks != []:
                     tracks = resolved.tracks
@@ -253,7 +247,6 @@ def process_soundcloud(vargs):
                         download_track(
                             track, resolved.title, keep_previews, folders, custom_path=vargs["path"],
                         )
-
             elif resolved.kind == "track":
                 tracks = [resolved]
             elif resolved.kind == "group":
@@ -264,12 +257,21 @@ def process_soundcloud(vargs):
                 artist = resolved
                 artist_id = str(artist.id)
                 tracks = client.get("/users/" + artist_id + "/tracks", limit=200)
-                if tracks == [] and artist.track_count > 0:
+
+                # SoundCloud has a nasty bug where some artists don't have any tracks returned using
+                # the previous call. There are a number of reports of this since late 2019 on StackOverflow.
+                # It seems that the common pattern is that if an artist has any tracks marked as private,
+                # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
+                # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
+                # is in the form of:
+                # http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
+
+                if len(tracks) == 0 and artist.track_count > 0:
                     aggressive = True
                     filenames = []
 
                     # this might be buggy
-                    data = get_soundcloud_api2_data(artist_id)
+                    #data = get_soundcloud_api2_data(artist_id)
 
                     for track in data["collection"]:
 
@@ -298,12 +300,6 @@ def process_soundcloud(vargs):
 
     if vargs["open"]:
         open_files(filenames)
-
-
-def get_client():
-    """Return a new SoundCloud Client object."""
-    client = soundcloud.Client(client_id=CLIENT_ID)
-    return client
 
 
 def download_track(
@@ -376,13 +372,9 @@ def download_tracks(
     filenames = []
 
     for i, track in enumerate(tracks):
-
-        # "Track" and "Resource" objects are actually different,
-        # even though they're the same.
+        # "Track" and "Resource" objects are actually different, even though they're the same.
         if isinstance(track, soundcloud.resource.Resource):
-
             try:
-
                 t_track = {}
                 t_track["downloadable"] = track.downloadable
                 t_track["streamable"] = track.streamable
@@ -481,28 +473,13 @@ def get_soundcloud_data(url):
 
     """
     data = {}
-
     request = requests.get(url)
-
     title_tag = request.text.split("<title>")[1].split("</title")[0]
     data["title"] = title_tag.split(" by ")[0].strip()
     data["artist"] = title_tag.split(" by ")[1].split("|")[0].strip()
     # XXX Do more..
 
     return data
-
-
-def get_soundcloud_api2_data(artist_id):
-    """Scrape the new API. Returns the parsed JSON response."""
-    v2_url = "https://api-v2.soundcloud.com/stream/users/%s?limit=500&client_id=%s&app_version=%s" % (
-        artist_id,
-        AGGRESSIVE_CLIENT_ID,
-        APP_VERSION,
-    )
-    response = requests.get(v2_url)
-    parsed = response.json()
-
-    return parsed
 
 
 def get_soundcloud_api_playlist_data(playlist_id):
@@ -512,9 +489,10 @@ def get_soundcloud_api_playlist_data(playlist_id):
         % (playlist_id)
     )
     response = requests.get(url)
-    parsed = response.json()
+    if response.status_code != 200:
+        return None
 
-    return parsed
+    return response.json()
 
 
 def get_hard_track_url(item_id):
@@ -527,11 +505,10 @@ def get_hard_track_url(item_id):
     response = requests.get(streams_url)
     json_response = response.json()
 
-    if response.status_code == 200:
-        hard_track_url = json_response["http_mp3_128_url"]
-        return hard_track_url
-    else:
+    if response.status_code != 200:
         return None
+
+    return json_response["http_mp3_128_url"]
 
 
 ####################################################################
@@ -626,7 +603,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
                 continue
 
             if not track["file"]:
-                puts_safe(colored.yellow("Track unavailble for scraping: ") + colored.white(track_name))
+                puts_safe(colored.yellow("Track unavailable for scraping: ") + colored.white(track_name))
                 continue
 
             puts_safe(colored.green("Downloading") + colored.white(": " + track_name))
@@ -1168,7 +1145,6 @@ def tag_file(
         audio.save()
 
         if artwork_url:
-
             artwork_url = artwork_url.replace("https", "http")
 
             mime = "image/jpeg"
