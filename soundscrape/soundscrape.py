@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import argparse
+import atoma
 import demjson
 import os
 import re
@@ -163,16 +164,13 @@ def process_soundcloud(vargs):
     try:
         if one_track:
             resolved = client.get("/resolve", url=track_url, limit=200)
-
         elif likes:
             userId = str(client.get("/resolve", url=artist_url).id)
-
             resolved = client.get("/users/" + userId + "/favorites", limit=200, linked_partitioning=1)
             next_href = False
             if hasattr(resolved, "next_href"):
                 next_href = resolved.next_href
             while next_href:
-
                 resolved2 = requests.get(next_href).json()
                 if "next_href" in resolved2:
                     next_href = resolved2["next_href"]
@@ -181,14 +179,12 @@ def process_soundcloud(vargs):
                 resolved2 = soundcloud.resource.ResourceList(resolved2["collection"])
                 resolved.collection.extend(resolved2)
             resolved = resolved.collection
-
         else:
             resolved = client.get("/resolve", url=artist_url, limit=200)
 
     except Exception as e:
         # SoundCloud is trying to prevent us from downloading this.
-        # We're going to have to stop trusting the API/client and
-        # do all our own scraping. Boo.
+        # Instead of utilizing the API/client we will do all our own scraping. Boo.
 
         if "404 Client Error" in str(e):
             puts(colored.red("Problem downloading [404]: ") + colored.white("Item Not Found"))
@@ -228,78 +224,95 @@ def process_soundcloud(vargs):
 
         filenames.append(filename)
 
+    # This is is likely a 'likes' page.
+    if not hasattr(resolved, "kind"):
+        tracks = resolved
     else:
-        aggressive = False
-
-        # This is is likely a 'likes' page.
-        if not hasattr(resolved, "kind"):
-            tracks = resolved
-        else:
-            if resolved.kind == "playlist":
-                id3_extras["album"] = resolved.title
-                if resolved.tracks != []:
-                    tracks = resolved.tracks
-                else:
-                    tracks = get_soundcloud_api_playlist_data(resolved.id)["tracks"]
-                    tracks = tracks[:num_tracks]
-                    aggressive = True
-                    for track in tracks:
-                        download_track(
-                            track, resolved.title, keep_previews, folders, custom_path=vargs["path"],
-                        )
-            elif resolved.kind == "track":
-                tracks = [resolved]
-            elif resolved.kind == "group":
-                group = resolved
-                group_id = str(group.id)
-                tracks = client.get("/groups/" + group_id + "/tracks", limit=200)
+        if resolved.kind == "playlist":
+            id3_extras["album"] = resolved.title
+            if resolved.tracks != []:
+                tracks = resolved.tracks
             else:
-                artist = resolved
-                artist_id = str(artist.id)
-                tracks = client.get("/users/" + artist_id + "/tracks", limit=200)
+                tracks = get_soundcloud_api_playlist_data(resolved.id)["tracks"]
+                tracks = tracks[:num_tracks]
+                for track in tracks:
+                    download_track(
+                        track, resolved.title, keep_previews, folders, custom_path=vargs["path"],
+                    )
+                return
+        elif resolved.kind == "track":
+            tracks = [resolved]
+        elif resolved.kind == "group":
+            group_id = str(resolved.id)
+            tracks = client.get("/groups/" + group_id + "/tracks", limit=200)
+        else:
+            artist_id = str(resolved.id)
+            tracks = client.get("/users/" + artist_id + "/tracks", limit=200)
 
-                # SoundCloud has a nasty bug where some artists don't have any tracks returned using
-                # the previous call. There are a number of reports of this since late 2019 on StackOverflow.
-                # It seems that the common pattern is that if an artist has any tracks marked as private,
-                # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
-                # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
-                # is in the form of:
-                # http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
+        # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
+        #   client.get("/users/" + artist_id + "/tracks", limit=200)
+        # There are a number of reports of this issue since late 2019 on StackOverflow.
+        # It seems that the common pattern is that if an artist has any tracks marked as private,
+        # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
+        # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
+        # is in the form of:
+        #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
-                if len(tracks) == 0 and artist.track_count > 0:
-                    aggressive = True
-                    filenames = []
+        if len(tracks) == 0 and resolved.track_count > 0:
+            artist = str(resolved.full_name)
+            artist_id = str(resolved.id)
+            filenames = []
 
-                    # this might be buggy
-                    #data = get_soundcloud_api2_data(artist_id)
+            response = requests.get(f"http://feeds.soundcloud.com/users/soundcloud:users:{artist_id}/sounds.rss")
+            if response.status_code != 200:
+                # TODO: add error reporting and handling
+                return
 
-                    for track in data["collection"]:
-
-                        if len(filenames) >= num_tracks:
-                            break
-
-                        if track["type"] == "playlist":
-                            track["playlist"]["tracks"] = track["playlist"]["tracks"][:num_tracks]
-                            for playlist_track in track["playlist"]["tracks"]:
-                                album_name = track["playlist"]["title"]
-                                filename = download_track(
-                                    playlist_track, album_name, keep_previews, folders, filenames, custom_path=vargs["path"],
-                                )
-                                if filename:
-                                    filenames.append(filename)
-                        else:
-                            d_track = track["track"]
-                            filename = download_track(d_track, custom_path=vargs["path"])
-                            if filename:
-                                filenames.append(filename)
-
-        if not aggressive:
+            feed = atoma.parse_rss_bytes(response.content)
+            for feed_item in feed.items:
+                filename = download_track_from_feed(artist, feed.image.url, feed_item, folders, vargs["path"])
+                if filename is not None:
+                    filenames.append(filename)
+        else:
             filenames = download_tracks(
-                client, tracks, num_tracks, vargs["downloadable"], vargs["folders"], vargs["path"], id3_extras=id3_extras,
+                client, tracks, num_tracks, vargs["downloadable"], folders, vargs["path"], id3_extras=id3_extras,
             )
 
     if vargs["open"]:
         open_files(filenames)
+
+
+def download_track_from_feed(artist, artwork, track, folders=False, custom_path=""):
+    """Given an RSS feed item, download the track."""
+    if len(track.enclosures) == 0:
+        return None
+    url = track.enclosures[0].url
+    title = track.title
+
+    filename = sanitize_filename(f"{artist} - {title}.mp3")
+
+    if folders:
+        name_path = join(custom_path, artist)
+        if not exists(name_path):
+            mkdir(name_path)
+        filename = join(name_path, filename)
+    else:
+        filename = join(custom_path, filename)
+
+    if exists(filename):
+        puts_safe(colored.yellow("Track already downloaded: ") + colored.white(title))
+        return None
+
+    puts_safe(colored.green("Scraping") + colored.white(": " + title))
+
+    filename = download_file(url, filename)
+    tagged = tag_file(filename, artist=artist, title=title, year=track.pub_date.year, artwork_url=artwork,)
+    if not tagged:
+        wav_filename = filename[:-3] + "wav"
+        os.rename(filename, wav_filename)
+        filename = wav_filename
+
+    return filename
 
 
 def download_track(

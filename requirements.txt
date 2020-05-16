@@ -1,4 +1,5 @@
 args>=0.1.0
+atoma>=0.0.17
 clint>=0.3.2
 demjson>=2.2.2
 fudge>=1.0.3
