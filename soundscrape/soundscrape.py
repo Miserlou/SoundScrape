@@ -1088,30 +1088,31 @@ def tag_file(
         audio.tags = None
         audio["artist"] = artist
         audio["title"] = title
-        if year:
+        if year is not None:
             audio["date"] = str(year)
-        if album:
+        if album is not None:
             audio["album"] = album
-        if track_number:
+        if track_number is not None:
             audio["tracknumber"] = track_number
-        if genre:
+        if genre is not None:
             audio["genre"] = genre
-        if url:  # saves the tag as WOAR
+        if url is not None:
+            # saves the tag as WOAR
             audio["website"] = url
         audio.save()
 
-        if artwork_url:
-            url = artwork_url.replace("https", "http")
-            urls = [url]
+        if artwork_url is not None:
+            artwork_url = artwork_url.replace("https", "http")
+            urls = [artwork_url]
             if "-large" in url:
-                urls.insert(0, url.replace("-large", "-t500x500"))
+                urls.insert(0, artwork_url.replace("-large", "-t500x500"))
 
             image_data = b"0"
-            for url in urls:
-                response = requests.get(url)
-                if response.status_code == 200:
-                    image_data = response.content
-                    break
+            for a_url in urls:
+                response = requests.get(a_url)
+                if response.status_code != 200:
+                    continue
+                image_data = response.content
 
             audio = MP3(filename, ID3=OldID3)
 
@@ -1125,7 +1126,7 @@ def tag_file(
             audio.save()
 
         # because there is software that doesn't seem to use WOAR we save url tag again as WXXX
-        if url:
+        if url is not None:
             audio = MP3(filename, ID3=OldID3)
             audio.tags.add(WXXX(encoding=3, url=url))
             audio.save()
