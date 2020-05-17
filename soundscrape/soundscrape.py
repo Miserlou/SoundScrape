@@ -191,7 +191,7 @@ def process_soundcloud(vargs):
         puts_safe(colored.green("Scraping") + colored.white(f": {track_data['title']}"))
 
         filenames = []
-        filename = sanitize(f"{track_data['artist']}  -  {track_data['title']}.mp3")
+        filename = sanitize(f"{track_data['artist']} - {track_data['title']}.mp3")
 
         if folders:
             name_path = join(vargs["path"], track_data["artist"])
@@ -322,7 +322,7 @@ def download_track(
     if name == "":
         name = track["user"]["username"]
 
-    filename = sanitize(f"{name}  - {track['title']}.mp3")
+    filename = sanitize(f"{name} - {track['title']}.mp3")
 
     if folders:
         name_path = join(custom_path, name)
@@ -411,7 +411,7 @@ def download_tracks(
             else:
                 track_artist = sanitize(track["user"]["username"])
                 track_title = sanitize(track["title"])
-                track_filename = f"{track_artist}  - {track_title}.mp3"
+                track_filename = f"{track_artist} - {track_title}.mp3"
 
                 if folders:
                     track_artist_path = join(custom_path, track_artist)
