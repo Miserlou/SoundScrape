@@ -514,7 +514,8 @@ def process_bandcamp(vargs):
         open_files(filenames)
 
 
-# Largely borrowed from Ronier's bandcampscrape
+# Largely borrowed from bandcampscrape
+# ( reference: https://github.com/ronier/bandcampscrape)
 def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=""):
     """
     Pull out artist and track info from a Bandcamp URL.
@@ -1100,25 +1101,23 @@ def tag_file(
         audio.save()
 
         if artwork_url:
-            artwork_url = artwork_url.replace("https", "http")
+            url = artwork_url.replace("https", "http")
+            urls = [url]
+            if "-large" in url:
+                urls.insert(0, url.replace("-large", "-t500x500"))
 
-            mime = "image/jpeg"
-            if ".jpg" in artwork_url:
-                mime = "image/jpeg"
-            if ".png" in artwork_url:
-                mime = "image/png"
-
-            if "-large" in artwork_url:
-                new_artwork_url = artwork_url.replace("-large", "-t500x500")
-                try:
-                    image_data = requests.get(new_artwork_url).content
-                except:
-                    # No very large image available.
-                    image_data = requests.get(artwork_url).content
-            else:
-                image_data = requests.get(artwork_url).content
+            image_data = b"0"
+            for url in urls:
+                response = requests.get(url)
+                if response.status_code == 200:
+                    image_data = response.content
+                    break
 
             audio = MP3(filename, ID3=OldID3)
+
+            mime = "image/jpeg"
+            if ".png" in artwork_url:
+                mime = "image/png"
 
             # encoding=3 means utf-8
             # type=3 means cover image
