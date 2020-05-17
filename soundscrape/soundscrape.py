@@ -13,6 +13,7 @@ import urllib
 
 from clint.textui import colored, puts, progress
 from datetime import datetime
+from mutagen import MutagenError
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
@@ -1083,59 +1084,56 @@ def tag_file(
         url (str):
 
     """
+    saved_correctly = True
+    audio = EasyMP3(filename)
+    audio.tags = None
+    audio["artist"] = artist
+    audio["title"] = title
+    if year is not None:
+        audio["date"] = str(year)
+    if album is not None:
+        audio["album"] = album
+    if track_number is not None:
+        audio["tracknumber"] = track_number
+    if genre is not None:
+        audio["genre"] = genre
+    if url is not None:
+        # saves the tag as WOAR
+        audio["website"] = url
+    if artwork_url is not None:
+        artwork_url = artwork_url.replace("https", "http")
+        urls = [artwork_url]
+        if "-large" in url:
+            urls.insert(0, artwork_url.replace("-large", "-t500x500"))
+
+        image_data = b"0"
+        for a_url in urls:
+            response = requests.get(a_url)
+            if response.status_code != 200:
+                continue
+            image_data = response.content
+
+        audio = MP3(filename, ID3=OldID3)
+
+        mime = "image/jpeg"
+        if ".png" in artwork_url:
+            mime = "image/png"
+
+        # encoding=3 means utf-8
+        # type=3 means cover image
+        audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=image_data))
+    if url is not None:
+        # Some software doesn't seem to use WOAR so the url is saved again as WXXX.
+        audio = MP3(filename, ID3=OldID3)
+        audio.tags.add(WXXX(encoding=3, url=url))
+
     try:
-        audio = EasyMP3(filename)
-        audio.tags = None
-        audio["artist"] = artist
-        audio["title"] = title
-        if year is not None:
-            audio["date"] = str(year)
-        if album is not None:
-            audio["album"] = album
-        if track_number is not None:
-            audio["tracknumber"] = track_number
-        if genre is not None:
-            audio["genre"] = genre
-        if url is not None:
-            # saves the tag as WOAR
-            audio["website"] = url
         audio.save()
-
-        if artwork_url is not None:
-            artwork_url = artwork_url.replace("https", "http")
-            urls = [artwork_url]
-            if "-large" in url:
-                urls.insert(0, artwork_url.replace("-large", "-t500x500"))
-
-            image_data = b"0"
-            for a_url in urls:
-                response = requests.get(a_url)
-                if response.status_code != 200:
-                    continue
-                image_data = response.content
-
-            audio = MP3(filename, ID3=OldID3)
-
-            mime = "image/jpeg"
-            if ".png" in artwork_url:
-                mime = "image/png"
-
-            # encoding=3 means utf-8
-            # type=3 means cover image
-            audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=image_data))
-            audio.save()
-
-        # because there is software that doesn't seem to use WOAR we save url tag again as WXXX
-        if url is not None:
-            audio = MP3(filename, ID3=OldID3)
-            audio.tags.add(WXXX(encoding=3, url=url))
-            audio.save()
-
-        return True
-
-    except:
+    except MutagenError:
         puts(colored.red("Problem tagging file: ") + colored.white("Is this file a WAV?"))
-        return False
+        saved_correctly = False
+
+    return saved_correctly
 
 
 def open_files(filenames):
