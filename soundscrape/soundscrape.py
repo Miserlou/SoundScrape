@@ -162,12 +162,12 @@ def process_soundcloud(vargs):
             if hasattr(resolved, "next_href"):
                 next_href = resolved.next_href
             while next_href is not None:
-                resolved2 = requests.get(next_href).json()
+                next_resolved = requests.get(next_href).json()
                 next_href = None
-                if "next_href" in resolved2:
-                    next_href = resolved2["next_href"]
-                resolved2 = soundcloud.resource.ResourceList(resolved2["collection"])
-                resolved.collection.extend(resolved2)
+                if "next_href" in next_resolved:
+                    next_href = next_resolved["next_href"]
+                next_resolved = soundcloud.resource.ResourceList(next_resolved["collection"])
+                resolved.collection.extend(next_resolved)
             resolved = resolved.collection
     except Exception as e:
         # SoundCloud is trying to prevent us from downloading this.
@@ -438,6 +438,7 @@ def download_tracks(
                         location = stream.url
 
                 filename = download_file(location, track_filename)
+
                 tagged = tag_file(
                     filename,
                     artist=track["user"]["username"],
@@ -1048,9 +1049,9 @@ def download_file(url, path, session=None, params=None):
     # Use a temporary file so that we don't import incomplete files.
     tmp_path = f"{path}.tmp"
 
-    if session and params:
+    if session is not None and params is not None:
         r = session.get(url, params=params, stream=True)
-    elif session and not params:
+    elif session is not None and params is None:
         r = session.get(url, stream=True)
     else:
         r = requests.get(url, stream=True)
