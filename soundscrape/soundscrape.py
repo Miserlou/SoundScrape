@@ -19,6 +19,7 @@ from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
 from os.path import dirname, exists, join
 from os import access, mkdir, W_OK
+from sanitize_filename import sanitize
 
 ####################################################################
 
@@ -190,7 +191,7 @@ def process_soundcloud(vargs):
         puts_safe(colored.green("Scraping") + colored.white(f": {track_data['title']}"))
 
         filenames = []
-        filename = sanitize_filename(f"{track_data['artist']}  -  {track_data['title']}.mp3")
+        filename = sanitize(f"{track_data['artist']}  -  {track_data['title']}.mp3")
 
         if folders:
             name_path = join(vargs["path"], track_data["artist"])
@@ -275,7 +276,7 @@ def download_track_from_feed(artist, artwork, track, folders=False, custom_path=
     url = track.enclosures[0].url
     title = track.title
 
-    filename = sanitize_filename(f"{artist} - {title}.mp3")
+    filename = sanitize(f"{artist} - {title}.mp3")
 
     if folders:
         name_path = join(custom_path, artist)
@@ -321,7 +322,7 @@ def download_track(
     if name == "":
         name = track["user"]["username"]
 
-    filename = sanitize_filename(f"{name}  - {track['title']}.mp3")
+    filename = sanitize(f"{name}  - {track['title']}.mp3")
 
     if folders:
         name_path = join(custom_path, name)
@@ -408,8 +409,8 @@ def download_tracks(
                 puts_safe(colored.white(track["title"]) + colored.red(" is not downloadable."))
                 continue
             else:
-                track_artist = sanitize_filename(track["user"]["username"])
-                track_title = sanitize_filename(track["title"])
+                track_artist = sanitize(track["user"]["username"])
+                track_title = sanitize(track["title"])
                 track_filename = f"{track_artist}  - {track_title}.mp3"
 
                 if folders:
@@ -540,7 +541,7 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
             directory = f"{artist} - {album_name}"
         else:
             directory = artist
-        directory = sanitize_filename(directory)
+        directory = sanitize(directory)
         directory = join(custom_path, directory)
         if not exists(directory):
             mkdir(directory)
@@ -558,12 +559,12 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
                 track_filename = f"{track_number} - {track_name}.mp3"
             else:
                 track_filename = f"{track_name}.mp3"
-            track_filename = sanitize_filename(track_filename)
+            track_filename = sanitize(track_filename)
 
             if folders:
                 path = join(directory, track_filename)
             else:
-                path = join(custom_path, sanitize_filename(artist) + " - " + track_filename)
+                path = join(custom_path, sanitize(artist) + " - " + track_filename)
 
             if exists(path):
                 puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_name))
@@ -694,8 +695,8 @@ def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_pa
 
     filenames = []
 
-    track_artist = sanitize_filename(data["artist"])
-    track_title = sanitize_filename(data["title"])
+    track_artist = sanitize(data["artist"])
+    track_title = sanitize(data["title"])
     track_filename = f"{track_artist} - {track_title}{data['mp3_url'][-4:]}"
 
     if folders:
@@ -804,8 +805,8 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_p
 
     filenames = []
 
-    track_artist = sanitize_filename(data["artist"])
-    track_title = sanitize_filename(data["title"])
+    track_artist = sanitize(data["artist"])
+    track_title = sanitize(data["title"])
     track_filename = f"{track_artist} - {track_title}.mp3"
 
     if folders:
@@ -986,12 +987,12 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=Fa
 
                 directory = custom_path
                 if folders:
-                    sanitized_artist = sanitize_filename(each_song["album"]["data"]["artist"]["data"]["name"])
-                    sanitized_album = sanitize_filename(each_song["album"]["data"]["name"])
+                    sanitized_artist = sanitize(each_song["album"]["data"]["artist"]["data"]["name"])
+                    sanitized_album = sanitize(each_song["album"]["data"]["name"])
                     directory = join(directory, sanitized_artist + " - " + sanitized_album)
                     if not exists(directory):
                         mkdir(directory)
-                filename = join(directory, str(song_count) + " - " + sanitize_filename(each_song["name"]) + ".mp3",)
+                filename = join(directory, str(song_count) + " - " + sanitize(each_song["name"]) + ".mp3",)
 
                 if exists(filename):
                     puts_safe(colored.yellow("Skipping") + colored.white(f": {each_song['name']} - already exists!"))
@@ -1142,28 +1143,6 @@ def open_files(filenames):
     command = ["open"] + filenames
     process = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
-
-
-def sanitize_filename(filename):
-    """
-    Make sure filenames are valid paths.
-
-    Returns:
-        str:
-
-    """
-    sanitized_filename = re.sub(r'[/\\:*?"<>|]', "-", filename)
-    sanitized_filename = sanitized_filename.replace("&", "and")
-    sanitized_filename = sanitized_filename.replace('"', "")
-    sanitized_filename = sanitized_filename.replace("'", "")
-    sanitized_filename = sanitized_filename.replace("/", "")
-    sanitized_filename = sanitized_filename.replace("\\", "")
-
-    # Annoying.
-    if sanitized_filename[0] == ".":
-        sanitized_filename = f"dot{sanitized_filename[1:]}"
-
-    return sanitized_filename
 
 
 def puts_safe(text):
