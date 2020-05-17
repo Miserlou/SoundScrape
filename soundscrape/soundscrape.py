@@ -1085,6 +1085,7 @@ def tag_file(
 
     """
     saved_correctly = True
+
     audio = EasyMP3(filename)
     audio.tags = None
     audio["artist"] = artist
@@ -1100,6 +1101,14 @@ def tag_file(
     if url is not None:
         # saves the tag as WOAR
         audio["website"] = url
+
+    try:
+        audio.save()
+    except MutagenError:
+        puts(colored.red("Problem tagging file: ") + colored.white("Is this file a WAV?"))
+        saved_correctly = False
+
+    audio = MP3(filename, ID3=OldID3)
     if artwork_url is not None:
         artwork_url = artwork_url.replace("https", "http")
         urls = [artwork_url]
@@ -1113,8 +1122,6 @@ def tag_file(
                 continue
             image_data = response.content
 
-        audio = MP3(filename, ID3=OldID3)
-
         mime = "image/jpeg"
         if ".png" in artwork_url:
             mime = "image/png"
@@ -1124,7 +1131,6 @@ def tag_file(
         audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=image_data))
     if url is not None:
         # Some software doesn't seem to use WOAR so the url is saved again as WXXX.
-        audio = MP3(filename, ID3=OldID3)
         audio.tags.add(WXXX(encoding=3, url=url))
 
     try:
