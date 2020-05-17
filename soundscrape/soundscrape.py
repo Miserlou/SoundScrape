@@ -102,21 +102,19 @@ def main():
 
     vargs["artist_url"] = urllib.parse.quote(vargs["artist_url"][0], safe=":/")
 
-    artist_url = vargs["artist_url"]
-
     if not exists(vargs["path"]):
         if not access(dirname(vargs["path"]), W_OK):
             vargs["path"] = ""
         else:
             mkdir(vargs["path"])
 
-    if "bandcamp.com" in artist_url or vargs["bandcamp"]:
+    if "bandcamp.com" in vargs["artist_url"] or vargs["bandcamp"]:
         process_bandcamp(vargs)
-    elif "mixcloud.com" in artist_url or vargs["mixcloud"]:
+    elif "mixcloud.com" in vargs["artist_url"] or vargs["mixcloud"]:
         process_mixcloud(vargs)
-    elif "audiomack.com" in artist_url or vargs["audiomack"]:
+    elif "audiomack.com" in vargs["artist_url"] or vargs["audiomack"]:
         process_audiomack(vargs)
-    elif "musicbed.com" in artist_url:
+    elif "musicbed.com" in vargs["artist_url"]:
         process_musicbed(vargs)
     else:
         process_soundcloud(vargs)
@@ -129,55 +127,46 @@ def main():
 
 def process_soundcloud(vargs):
     """Main SoundCloud path."""
-    artist_url = vargs["artist_url"].lower()
+    url = vargs["artist_url"].lower()
     track_permalink = vargs["track"].lower()
     keep_previews = vargs["keep"]
     folders = vargs["folders"]
+    num_tracks = vargs["num_tracks"]
 
     id3_extras = {}
-    one_track = False
-    num_tracks = 1
     likes = False
     client = soundcloud.Client(client_id=CLIENT_ID)
 
-    if "soundcloud" not in artist_url.lower():
+    if "soundcloud" not in url.lower():
         if vargs["group"]:
-            artist_url = f"https://soundcloud.com/groups/{artist_url}"
+            url = f"https://soundcloud.com/groups/{url}"
         elif len(track_permalink) > 0:
-            one_track = True
-            track_url = f"https://soundcloud.com/{artist_url}/{track_permalink}"
+            url = f"https://soundcloud.com/{url}/{track_permalink}"
         else:
-            artist_url = f"https://soundcloud.com/{artist_url}"
-            if vargs["likes"] or "likes" in artist_url.lower():
+            url = f"https://soundcloud.com/{url}"
+            if vargs["likes"] or "likes" in url.lower():
                 likes = True
 
-    if "likes" in artist_url.lower():
-        artist_url = artist_url[0 : artist_url.find("/likes")]
+    if "likes" in url.lower():
+        url = url[0 : url.find("/likes")]
         likes = True
 
-    if not one_track:
-        num_tracks = vargs["num_tracks"]
-
     try:
-        if one_track:
-            resolved = client.get("/resolve", url=track_url, limit=200)
-        elif likes:
-            userId = str(client.get("/resolve", url=artist_url).id)
-            resolved = client.get(f"/users/{userId}/favorites", limit=200, linked_partitioning=1)
-            next_href = False
+        resolved = client.get("/resolve", url=url, limit=200)
+
+        if likes:
+            resolved = client.get(f"/users/{resolved.id}/favorites", limit=200, linked_partitioning=1)
+            next_href = None
             if hasattr(resolved, "next_href"):
                 next_href = resolved.next_href
-            while next_href:
+            while next_href is not None:
                 resolved2 = requests.get(next_href).json()
+                next_href = None
                 if "next_href" in resolved2:
                     next_href = resolved2["next_href"]
-                else:
-                    next_href = False
                 resolved2 = soundcloud.resource.ResourceList(resolved2["collection"])
                 resolved.collection.extend(resolved2)
             resolved = resolved.collection
-        else:
-            resolved = client.get("/resolve", url=artist_url, limit=200)
     except Exception as e:
         # SoundCloud is trying to prevent us from downloading this.
         # Instead of utilizing the API/client we will do all our own scraping. Boo.
@@ -186,6 +175,7 @@ def process_soundcloud(vargs):
             puts(colored.red("Problem downloading [404]: ") + colored.white("Item Not Found"))
             return None
 
+        # TODO: This exception handler can be handled by download_track(...) with a little refactoring.
         message = str(e)
         item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
         hard_track_url = get_hard_track_url(item_id)
@@ -237,19 +227,18 @@ def process_soundcloud(vargs):
                 tracks = tracks[:num_tracks]
                 for track in tracks:
                     download_track(track, resolved.title, keep_previews, folders, custom_path=vargs["path"])
-                return
+                return None
         elif resolved.kind == "track":
             tracks = [resolved]
         elif resolved.kind == "group":
-            group_id = str(resolved.id)
-            tracks = client.get(f"/groups/{group_id}/tracks", limit=200)
+            tracks = client.get(f"/groups/{resolved.id}/tracks", limit=200)
         else:
-            artist_id = str(resolved.id)
-            tracks = client.get(f"/users/{artist_id}/tracks", limit=200)
+            tracks = client.get(f"/users/{resolved.id}/tracks", limit=200)
 
         # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
         #   client.get("/users/" + artist_id + "/tracks", limit=200)
         # There are a number of reports of this issue since late 2019 on StackOverflow.
+        # ( reference: https://stackoverflow.com/questions/59204383, https://stackoverflow.com/questions/61807979)
         # It seems that the common pattern is that if an artist has any tracks marked as private,
         # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
         # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
@@ -257,18 +246,16 @@ def process_soundcloud(vargs):
         #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
         if len(tracks) == 0 and resolved.track_count > 0:
-            artist = str(resolved.full_name)
-            artist_id = str(resolved.id)
             filenames = []
 
-            response = requests.get(f"http://feeds.soundcloud.com/users/soundcloud:users:{artist_id}/sounds.rss")
+            response = requests.get(f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss")
             if response.status_code != 200:
                 # TODO: add error reporting and handling
                 return
 
             feed = atoma.parse_rss_bytes(response.content)
             for feed_item in feed.items:
-                filename = download_track_from_feed(artist, feed.image.url, feed_item, folders, vargs["path"])
+                filename = download_track_from_feed(resolved.full_name, feed.image.url, feed_item, folders, vargs["path"])
                 if filename is not None:
                     filenames.append(filename)
         else:
@@ -282,6 +269,7 @@ def process_soundcloud(vargs):
 
 def download_track_from_feed(artist, artwork, track, folders=False, custom_path=""):
     """Given an RSS feed item, download the track."""
+    # TODO: With a little refactoring this method can merge with download_track(...).
     if len(track.enclosures) == 0:
         return None
     url = track.enclosures[0].url
