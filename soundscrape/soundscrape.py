@@ -181,7 +181,7 @@ def process_soundcloud(vargs):
         message = str(e)
 
         item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
-        url = get_hard_track_url(item_id)
+        url = get_soundcloud_track_url(item_id)
         request = requests.get(url)
         # TODO: handle != 200.
         title_tag = request.text.split("<title>")[1].split("</title")[0]
@@ -205,7 +205,7 @@ def process_soundcloud(vargs):
             if resolved.tracks != []:
                 tracks = resolved.tracks
             else:
-                tracks = get_soundcloud_api_playlist_data(resolved.id)["tracks"]
+                tracks = get_soundcloud_playlist_data(resolved.id)["tracks"]
                 tracks = tracks[:num_tracks]
                 for track in tracks:
                     if not keep_previews and (track.get("duration", 0) < track.get("full_duration", 0)):
@@ -217,7 +217,7 @@ def process_soundcloud(vargs):
                         artist = track["user"]["username"]
 
                     track_data = {
-                        "url": get_hard_track_url(track["id"]),
+                        "url": get_soundcloud_track_url(track["id"]),
                         "artist": artist,
                         "title": resolved.title,
                     }
@@ -256,6 +256,7 @@ def process_soundcloud(vargs):
                 if artist == "":
                     artist = resolved.username
 
+                # TODO: There could be more than one enclosure, perhaps a playlist? Handle those cases.
                 track_data = {
                     "url": feed_item.enclosures[0].url,
                     "artist": artist,
@@ -356,7 +357,7 @@ def download_tracks(
                         t_track["stream_url"] = track.stream_url
                     else:
                         t_track["direct"] = True
-                        t_track["stream_url"] = get_hard_track_url(track.id)
+                        t_track["stream_url"] = get_soundcloud_track_url(track.id)
 
                 track = t_track
             except:
@@ -422,8 +423,17 @@ def download_tracks(
     return filenames
 
 
-def get_soundcloud_api_playlist_data(playlist_id):
-    """Scrape the new API. Returns the parsed JSON response."""
+def get_soundcloud_playlist_data(playlist_id):
+    """
+    Get playlist data from SoundCloud.
+
+    Args:
+        playlist_id (str): id of the playlist
+
+    Returns:
+        data about the playlist with playlist_id or None
+
+    """
     url = f"https://api.soundcloud.com/playlists/{playlist_id}?representation=full&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=1467724310"
     response = requests.get(url)
     if response.status_code != 200:
@@ -432,9 +442,20 @@ def get_soundcloud_api_playlist_data(playlist_id):
     return response.json()
 
 
-def get_hard_track_url(item_id):
-    """Hard-scrapes a track."""
-    url = f"https://api.soundcloud.com/i1/tracks/{item_id}/streams/?client_id={AGGRESSIVE_CLIENT_ID}&app_version={APP_VERSION}"
+def get_soundcloud_track_url(track_id):
+    """
+    Get the track url from SoundCloud.
+
+    Args:
+        track_id (str): id of the track
+
+    Returns:
+        url to the track with track_id or None
+
+    """
+    url = (
+        f"https://api.soundcloud.com/i1/tracks/{track_id}/streams/?client_id={AGGRESSIVE_CLIENT_ID}&app_version={APP_VERSION}"
+    )
     response = requests.get(url)
     if response.status_code != 200:
         return None
