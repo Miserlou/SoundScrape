@@ -132,8 +132,10 @@ def process_soundcloud(vargs):
     url = vargs["artist_url"].lower()
     track_permalink = vargs["track"].lower()
     keep_previews = vargs["keep"]
-    folders = vargs["folders"]
     num_tracks = vargs["num_tracks"]
+    use_folders = vargs["folders"]
+    custom_path = vargs["path"]
+    downloadable_links_only = vargs["downloadable"]
 
     album = None
     artist = None
@@ -172,114 +174,106 @@ def process_soundcloud(vargs):
                 resolved.collection.extend(next_resolved)
             resolved = resolved.collection
     except Exception as e:
-        # SoundCloud is trying to prevent us from downloading this.
-        # Instead of utilizing the API/client we will do all our own scraping. Boo.
-
-        message = str(e)
-
-        if "404 client error" in message.lower():
-            puts(colored.red("Problem downloading [404]: ") + colored.white("Item Not Found"))
-            return None
-
-        item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
-        url = get_soundcloud_track_url(item_id)
-        request = requests.get(url)
-        if request.status_code != 200:
-            puts(colored.red("Problem downloading: ") + colored.white(url))
-            return None
-
-        title_tag = request.text.split("<title>")[1].split("</title")[0]
-
-        track_data = {
-            "url": url,
-            "artist": title_tag.split(" by ")[1].split("|")[0].strip(),
-            "title": title_tag.split(" by ")[0].strip(),
-        }
-        filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
+        filename = force_download_from_soundcloud(str(e), use_folders, custom_path)
         if filename is not None:
             filenames.append(filename)
 
-    # This is is likely a 'likes' page.
     if not hasattr(resolved, "kind"):
+        # This is either likes or sets.
         tracks = resolved
-    else:
-        if resolved.kind == "playlist":
-            album = resolved.title
-            if len(resolved.tracks) > 0:
-                tracks = resolved.tracks
-            else:
-                tracks = get_soundcloud_playlist_data(resolved.id)["tracks"]
-                tracks = tracks[:num_tracks]
-                for track in tracks:
-                    if not keep_previews and (track.get("duration", 0) < track.get("full_duration", 0)):
-                        puts_safe(colored.yellow("Skipping preview track: ") + colored.white(track["title"]))
-                        continue
-
-                    artist = track["user"].get("full_name", "")
-                    if artist == "":
-                        artist = track["user"]["username"]
-
-                    track_data = {
-                        "url": get_soundcloud_track_url(track["id"]),
-                        "artist": artist,
-                        "title": resolved.title,
-                        "album": album,
-                    }
-                    filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
-                    if filename is not None:
-                        filenames.append(filename)
-        elif resolved.kind == "track":
-            tracks = [resolved]
-        elif resolved.kind == "group":
-            tracks = client.get(f"/groups/{resolved.id}/tracks", limit=200)
+    elif resolved.kind == "playlist":
+        album = resolved.title
+        if len(resolved.tracks) > 0:
+            tracks = resolved.tracks
         else:
-            tracks = client.get(f"/users/{resolved.id}/tracks", limit=200)
+            tracks = get_soundcloud_playlist_data(resolved.id)["tracks"]
+    elif resolved.kind == "track":
+        tracks = [resolved]
+    elif resolved.kind == "group":
+        tracks = client.get(f"/groups/{resolved.id}/tracks", limit=200)
+    else:
+        tracks = client.get(f"/users/{resolved.id}/tracks", limit=200)
 
+    if hasattr(resolved, "full_name"):
         artist = resolved.full_name
         if artist == "":
             artist = resolved.username
 
-        # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
-        #   client.get("/users/" + artist_id + "/tracks", limit=200)
-        # There are a number of reports of this issue since late 2019 on StackOverflow.
-        # ( reference: https://stackoverflow.com/questions/59204383, https://stackoverflow.com/questions/61807979)
-        # It seems that the common pattern is that if an artist has any tracks marked as private,
-        # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
-        # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
-        # is in the form of:
-        #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
+    # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
+    #   client.get("/users/" + artist_id + "/tracks", limit=200)
+    # There are a number of reports of this issue since late 2019 on StackOverflow.
+    # ( reference: https://stackoverflow.com/questions/59204383, https://stackoverflow.com/questions/61807979)
+    # It seems that the common pattern is that if an artist has any tracks marked as private,
+    # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
+    # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
+    # is in the form of:
+    #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
-        if len(tracks) == 0 and resolved.track_count > 0:
-            url = f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss"
-            response = requests.get(url)
-            if response.status_code != 200:
-                puts(colored.red("Problem downloading: ") + colored.white(url))
-                return None
+    if len(tracks) == 0 and resolved.track_count > 0:
+        url = f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss"
+        response = requests.get(url)
+        if response.status_code != 200:
+            puts(colored.red("Problem downloading: ") + colored.white(url))
+            return None
 
-            feed = atoma.parse_rss_bytes(response.content)
-            for feed_item in feed.items:
-                if len(feed_item.enclosures) == 0:
-                    continue
+        feed = atoma.parse_rss_bytes(response.content)
+        for feed_item in feed.items:
+            if len(feed_item.enclosures) == 0:
+                continue
 
-                for enclosure in feed_item.enclosures:
-                    track_data = {
-                        "url": enclosure.url,
-                        "artist": artist,
-                        "title": feed_item.title,
-                        "date": feed_item.pub_date.year,
-                        "artwork_url": feed.image.url,
-                    }
+            for enclosure in feed_item.enclosures:
+                track_data = {
+                    "url": enclosure.url,
+                    "artist": artist,
+                    "title": feed_item.title,
+                    "date": feed_item.pub_date.year,
+                    "artwork_url": feed.image.url,
+                }
 
-                    filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
-                    if filename is not None:
-                        filenames.append(filename)
-        else:
-            filenames = download_tracks(
-                client, tracks, artist, album, num_tracks, vargs["downloadable"], folders, vargs["path"],
-            )
+                filename = download_single_track(track_data, use_folders, custom_path)
+                if filename is not None:
+                    filenames.append(filename)
+    else:
+        filenames = download_tracks(
+            client, tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
+        )
 
     if vargs["open"]:
         open_files(filenames)
+
+
+def force_download_from_soundcloud(message, use_folders, custom_path):
+    """
+    Try to force download a track from SoundCloud despite a client error.
+
+    Args:
+        message (str):
+        use_folder (bool):
+        custom_path (str):
+
+    Returns:
+        filename of successfully downloaded track or None
+
+    """
+    if "404" in message.lower():
+        puts(colored.red("Problem downloading [404]: ") + colored.white("Item Not Found"))
+        return None
+
+    item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
+    url = get_soundcloud_track_url(item_id)
+    request = requests.get(url)
+    if request.status_code != 200:
+        puts(colored.red("Problem downloading: ") + colored.white(url))
+        return None
+
+    title_tag = request.text.split("<title>")[1].split("</title")[0]
+
+    track_data = {
+        "url": url,
+        "artist": title_tag.split(" by ")[1].split("|")[0].strip(),
+        "title": title_tag.split(" by ")[0].strip(),
+    }
+    return download_single_track(track_data, use_folders, custom_path)
 
 
 def download_single_track(track_data, use_folders=False, custom_path=""):
@@ -321,10 +315,10 @@ def download_single_track(track_data, use_folders=False, custom_path=""):
         filename,
         artist=track_data["artist"],
         title=track_data["title"],
-        album=track_data.get("album", None),
-        year=track_data.get("date", None),
-        genre=track_data.get("genre", None),
-        artwork_url=track_data.get("artwork_url", None),
+        album=track_data.get("album"),
+        year=track_data.get("date"),
+        genre=track_data.get("genre"),
+        artwork_url=track_data.get("artwork_url"),
     )
     if not tagged:
         wav_filename = f"{filename[:-3]}wav"
@@ -341,35 +335,54 @@ def download_tracks(
     filenames = []
 
     for i, track in enumerate(tracks):
-        # "Track" and "Resource" objects are actually different, even though they're the same.
-        if not isinstance(track, soundcloud.resource.Resource):
+        track_id = track.id if hasattr(track, "id") else track.get("id", "")
+        title = track.title if hasattr(track, "title") else track.get("title", "")
+
+        if hasattr(track, "kind") and track.kind == "playlist":
+            if len(track.tracks) > 0:
+                playlist_tracks = track.tracks
+            else:
+                playlist_tracks = get_soundcloud_playlist_data(track_id)
+                playlist_tracks = playlist_tracks["tracks"] if playlist_tracks is not None else None
+            if playlist_tracks is not None:
+                download_tracks(
+                    client, playlist_tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
+                )
+            else:
+                puts_safe(colored.white(title) + colored.red(" is not downloadable."))
             continue
 
         track_data = {}
-        try:
-            track_data = {
-                "streamable": track.streamable,
-                "title": track.title,
-                "artist": artist,
-                "release_year": track.release,
-                "genre": track.genre,
-                "album": album,
-                "artwork_url": track.artwork_url,
-                "direct": False,
-            }
-            if track.downloadable:
-                track_data["url"] = track.download_url
+
+        user = track.user if hasattr(track, "user") else track.get("user")
+        track_artist = artist
+        if user is not None:
+            track_artist = user["full_name"] if user.get("full_name") is not None else user["username"]
+
+        track_data = {
+            "direct": False,
+            "artist": artist if artist is not None else track_artist,
+            "album": album,
+            "title": title,
+            "streamable": track.streamable if hasattr(track, "streamable") else track.get("streamable", False),
+            "date": track.release if hasattr(track, "release") else track.get("release"),
+            "genre": track.genre if hasattr(track, "genre") else track.get("genre"),
+            "artwork_url": track.artwork_url if hasattr(track, "artwork_url") else track.get("artwork_url"),
+        }
+        if track.downloadable if hasattr(track, "downloadable") else track.get("downloadable", False):
+            track_data["url"] = track.download_url if hasattr(track, "download_url") else track.get("download_url")
+        else:
+            if downloadable_links_only:
+                puts_safe(colored.red("Skipping: ") + colored.white(title))
+                continue
+            if hasattr(track, "stream_url") or isinstance(track, dict):
+                track_data["url"] = track.stream_url if hasattr(track, "stream_url") else track.get("stream_url")
             else:
-                if downloadable_links_only:
-                    puts_safe(colored.red("Skipping: ") + colored.white(track.title))
-                    continue
-                if hasattr(track, "stream_url"):
-                    track_data["url"] = track.stream_url
-                else:
-                    track_data["url"] = get_soundcloud_track_url(track.id)
-                    track_data["direct"] = True
-        except:
-            puts_safe(colored.white(track.title) + colored.red(" is not downloadable."))
+                track_data["url"] = get_soundcloud_track_url(track_id)
+                track_data["direct"] = True
+
+        if track_data["url"] is None:
+            puts_safe(colored.white(title) + colored.red(" is not downloadable."))
             continue
 
         if i > num_tracks - 1:
@@ -386,8 +399,11 @@ def download_tracks(
             if filename is not None:
                 filenames.append(filename)
         except Exception as e:
-            puts_safe(colored.red("Problem downloading ") + colored.white(track_data["title"]))
-            puts_safe(str(e))
+            filename = force_download_from_soundcloud(str(e), use_folders, custom_path)
+            if filename is not None:
+                filenames.append(filename)
+            else:
+                puts_safe(colored.red("Problem downloading ") + colored.white(track_data["title"]))
 
     return filenames
 
@@ -406,7 +422,7 @@ def get_soundcloud_playlist_data(playlist_id):
     url = f"https://api.soundcloud.com/playlists/{playlist_id}?representation=full&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=1467724310"
     response = requests.get(url)
     if response.status_code != 200:
-        puts(colored.red("Problem downloading: ") + colored.white(url))
+        puts(colored.red("Problem getting playlist data from: ") + colored.white(url))
         return None
 
     return response.json()
@@ -428,7 +444,7 @@ def get_soundcloud_track_url(track_id):
     )
     response = requests.get(url)
     if response.status_code != 200:
-        puts(colored.red("Problem downloading: ") + colored.white(url))
+        puts(colored.red("Problem getting track data from: ") + colored.white(url))
         return None
 
     json_response = response.json()
@@ -1112,6 +1128,9 @@ def tag_file(
 
 def open_files(filenames):
     """Call the system 'open' command on a file."""
+    if len(filenames) == 0:
+        return
+
     command = ["open"] + filenames
     process = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
