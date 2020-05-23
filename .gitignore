@@ -1,8 +1,8 @@
-.coverage/
 .vscode/
 build/
 dist/
 env/
+.coverage
 *.DS_Store
 *.pyc
 *.bak
