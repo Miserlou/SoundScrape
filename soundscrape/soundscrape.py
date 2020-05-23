@@ -962,9 +962,7 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, use_folder
         return []
     login_response_data = demjson.decode(response.text)
     if not login_response_data["body"]["status"]:
-        puts(
-            colored.red("Can't login to MusicBed. ") + colored.white("Did you provide correct login and password?")
-        )
+        puts(colored.red("Can't login to MusicBed. ") + colored.white("Did you provide correct login and password?"))
         session.close()
         return []
 
