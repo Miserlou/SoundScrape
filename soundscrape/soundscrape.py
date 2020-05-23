@@ -174,16 +174,19 @@ def process_soundcloud(vargs):
         # SoundCloud is trying to prevent us from downloading this.
         # Instead of utilizing the API/client we will do all our own scraping. Boo.
 
-        if "404 Client Error" in str(e):
+        message = str(e)
+
+        if "404 client error" in message.lower():
             puts(colored.red("Problem downloading [404]: ") + colored.white("Item Not Found"))
             return None
-
-        message = str(e)
 
         item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
         url = get_soundcloud_track_url(item_id)
         request = requests.get(url)
-        # TODO: handle != 200.
+        if request.status_code != 200:
+            puts(colored.red("Problem downloading: ") + colored.white(url))
+            return None
+
         title_tag = request.text.split("<title>")[1].split("</title")[0]
 
         track_data = {
@@ -191,7 +194,6 @@ def process_soundcloud(vargs):
             "artist": title_tag.split(" by ")[1].split("|")[0].strip(),
             "title": title_tag.split(" by ")[0].strip(),
         }
-
         filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
         if filename is not None:
             filenames.append(filename)
@@ -242,10 +244,11 @@ def process_soundcloud(vargs):
         #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
         if len(tracks) == 0 and resolved.track_count > 0:
-            response = requests.get(f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss")
+            url = f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss"
+            response = requests.get(url)
             if response.status_code != 200:
-                # TODO: add error reporting and handling
-                return
+                puts(colored.red("Problem downloading: ") + colored.white(url))
+                return None
 
             feed = atoma.parse_rss_bytes(response.content)
             for feed_item in feed.items:
@@ -437,6 +440,7 @@ def get_soundcloud_playlist_data(playlist_id):
     url = f"https://api.soundcloud.com/playlists/{playlist_id}?representation=full&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=1467724310"
     response = requests.get(url)
     if response.status_code != 200:
+        puts(colored.red("Problem downloading: ") + colored.white(url))
         return None
 
     return response.json()
@@ -458,6 +462,7 @@ def get_soundcloud_track_url(track_id):
     )
     response = requests.get(url)
     if response.status_code != 200:
+        puts(colored.red("Problem downloading: ") + colored.white(url))
         return None
 
     json_response = response.json()
@@ -579,9 +584,9 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
 
             filenames.append(path)
 
-        except Exception as e:
+        except:
             puts_safe(colored.red("Problem downloading ") + colored.white(track_name))
-            print(e)
+
     return filenames
 
 
@@ -781,13 +786,13 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_p
         list: filenames to open
 
     """
+    filenames = []
+
     try:
         data = get_audiomack_data(mc_url)
-    except Exception as e:
+    except:
         puts_safe(colored.red("Problem downloading ") + mc_url)
-        print(e)
-
-    filenames = []
+        return filenames
 
     track_artist = sanitize(data["artist"])
     track_title = sanitize(data["title"])
@@ -800,7 +805,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, folders=False, custom_p
         track_filename = join(track_artist_path, track_filename)
         if exists(track_filename):
             puts_safe(colored.yellow("Skipping: ") + colored.white(data["title"]) + colored.yellow(" - already exists!"))
-            return []
+            return filenames
     else:
         track_filename = join(custom_path, track_filename)
 
@@ -1068,6 +1073,7 @@ def tag_file(
         url (str):
 
     """
+    # TODO: move year to date.
     saved_correctly = True
 
     audio = EasyMP3(filename)
