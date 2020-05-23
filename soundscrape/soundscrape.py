@@ -37,7 +37,7 @@ APP_VERSION = "1481046241"
 
 def main():
     """
-    Main function.
+    Argument parsing main function.
 
     Converts arguments to Python and processes accordingly.
     """
@@ -127,7 +127,13 @@ def main():
 
 
 def process_soundcloud(vargs):
-    """Main SoundCloud path."""
+    """
+    Process SoundCloud download.
+
+    Args:
+        vargs (dict):
+
+    """
     url = vargs["artist_url"].lower()
     track_permalink = vargs["track"].lower()
     num_tracks = vargs["num_tracks"]
@@ -474,7 +480,12 @@ def get_soundcloud_track_url(track_id):
 
 
 def process_bandcamp(vargs):
-    """Main BandCamp path."""
+    """
+    Process BandCamp download.
+
+    Args:
+        vargs (dict):
+    """
     artist_url = vargs["artist_url"]
 
     if "bandcamp.com" in artist_url or ("://" in artist_url and vargs["bandcamp"]):
@@ -648,7 +659,12 @@ def get_bandcamp_metadata(url):
 
 
 def process_mixcloud(vargs):
-    """Main MixCloud path."""
+    """
+    Process MixCloud download.
+
+    Args:
+        vargs (dict):
+    """
     artist_url = vargs["artist_url"]
 
     if "mixcloud.com" in artist_url:
@@ -761,7 +777,12 @@ def get_mixcloud_data(url):
 
 
 def process_audiomack(vargs):
-    """Main Audiomack path."""
+    """
+    Process Audiomack download.
+
+    Args:
+        vargs (dict):
+    """
     artist_url = vargs["artist_url"]
 
     if "audiomack.com" in artist_url:
@@ -855,7 +876,12 @@ def get_audiomack_data(url):
 
 
 def process_musicbed(vargs):
-    """Main MusicBed path."""
+    """
+    Process MusicBed download.
+
+    Args:
+        vargs (dict):
+    """
     validated = False
     if vargs["artist_url"].startswith("https://www.musicbed.com/"):
         splitted = vargs["artist_url"][len("https://www.musicbed.com/") :].split("/")
@@ -937,8 +963,7 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, use_folder
     login_response_data = demjson.decode(response.text)
     if not login_response_data["body"]["status"]:
         puts(
-            colored.red("scrape_musicbed_url: couldn't login. Aborting. ")
-            + colored.white("Did you provide correct login and password?")
+            colored.red("Can't login to MusicBed. ") + colored.white("Did you provide correct login and password?")
         )
         session.close()
         return []
@@ -1144,7 +1169,12 @@ def tag_file(
 
 
 def open_files(filenames):
-    """Call the system 'open' command on a file."""
+    """
+    Call the system 'open' command on a file.
+
+    Args:
+        filenames (list):
+    """
     if len(filenames) == 0:
         return
 
@@ -1154,6 +1184,12 @@ def open_files(filenames):
 
 
 def puts_safe(text):
+    """
+    Safely write to the screen.
+
+    Args:
+        text (str):
+    """
     if sys.platform == "win32":
         puts(text.encode(sys.stdout.encoding, errors="replace").decode())
     else:
