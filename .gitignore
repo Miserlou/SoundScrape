@@ -1,7 +1,11 @@
+.coverage/
 .vscode/
+build/
+dist/
 env/
 *.DS_Store
 *.pyc
 *.bak
-build/
-dist/
+*.mp3
+*.m4a
+*.tmp

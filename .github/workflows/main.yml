@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 black pytest
+        pip install flake8 black pytest coverage
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Black code formatting
       run: |
@@ -30,4 +30,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --ignore=E203,E231 --statistics
     - name: Run tests
       run: |
-        PYTHONPATH=$(pwd) pytest tests/test.py
+        PYTHONPATH=$(pwd) coverage run -m --include="soundscrape/*" pytest tests/test.py
+    - name: Coverage report
+      run: |
+        coverage report -m
