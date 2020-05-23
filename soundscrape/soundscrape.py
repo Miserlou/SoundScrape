@@ -259,18 +259,18 @@ def process_soundcloud(vargs):
                 if artist == "":
                     artist = resolved.username
 
-                # TODO: There could be more than one enclosure, perhaps a playlist? Handle those cases.
-                track_data = {
-                    "url": feed_item.enclosures[0].url,
-                    "artist": artist,
-                    "title": feed_item.title,
-                    "date": feed_item.pub_date.year,
-                    "artwork_url": feed.image.url,
-                }
+                for enclosure in feed_item.enclosures:
+                    track_data = {
+                        "url": enclosure.url,
+                        "artist": artist,
+                        "title": feed_item.title,
+                        "date": feed_item.pub_date.year,
+                        "artwork_url": feed.image.url,
+                    }
 
-                filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
-                if filename is not None:
-                    filenames.append(filename)
+                    filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
+                    if filename is not None:
+                        filenames.append(filename)
         else:
             filenames = download_tracks(
                 client, tracks, num_tracks, vargs["downloadable"], folders, vargs["path"], id3_extras=id3_extras,
