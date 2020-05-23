@@ -197,40 +197,18 @@ def process_soundcloud(vargs):
         if artist == "":
             artist = resolved.username
 
-    # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
-    #   client.get("/users/" + artist_id + "/tracks", limit=200)
-    # There are a number of reports of this issue since late 2019 on StackOverflow.
-    # ( reference: https://stackoverflow.com/questions/59204383, https://stackoverflow.com/questions/61807979)
-    # It seems that the common pattern is that if an artist has any tracks marked as private,
-    # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
-    # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
-    # is in the form of:
-    #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
-
     if len(tracks) == 0 and resolved.track_count > 0:
-        url = f"http://feeds.soundcloud.com/users/soundcloud:users:{resolved.id}/sounds.rss"
-        response = requests.get(url)
-        if response.status_code != 200:
-            puts(colored.red("Problem downloading: ") + colored.white(url))
-            return None
+        # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
+        #   client.get("/users/" + artist_id + "/tracks", limit=200)
+        # There are a number of reports of this issue since late 2019 on StackOverflow.
+        # ( reference: https://stackoverflow.com/questions/59204383, https://stackoverflow.com/questions/61807979)
+        # It seems that the common pattern is that if an artist has any tracks marked as private,
+        # e.g. the track is not downloadable (only streamable), then SoundCloud won't return any
+        # tracks for that artist. The way around this is to refer to the artist's RSS feed. This
+        # is in the form of:
+        #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
-        feed = atoma.parse_rss_bytes(response.content)
-        for feed_item in feed.items:
-            if len(feed_item.enclosures) == 0:
-                continue
-
-            for enclosure in feed_item.enclosures:
-                track_data = {
-                    "url": enclosure.url,
-                    "artist": artist,
-                    "title": feed_item.title,
-                    "date": feed_item.pub_date.year,
-                    "artwork_url": feed.image.url,
-                }
-
-                filename = download_single_track(track_data, use_folders, custom_path)
-                if filename is not None:
-                    filenames.append(filename)
+        filenames = download_from_soundcloud_feed(resolved.id, artist, use_folders, custom_path)
     else:
         filenames = download_tracks(
             client, tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
@@ -240,7 +218,7 @@ def process_soundcloud(vargs):
         open_files(filenames)
 
 
-def force_download_from_soundcloud(message, use_folders, custom_path):
+def force_download_from_soundcloud(message, use_folders=False, custom_path=""):
     """
     Try to force download a track from SoundCloud despite a client error.
 
@@ -272,6 +250,47 @@ def force_download_from_soundcloud(message, use_folders, custom_path):
         "title": title_tag.split(" by ")[0].strip(),
     }
     return download_single_track(track_data, use_folders, custom_path)
+
+
+def download_from_soundcloud_feed(track_id, artist, use_folders=False, custom_path=""):
+    """
+    Use the artist's RSS feed from SoundCloud to get tracks.
+
+    Args:
+        track_id (int):
+        artist (str):
+        use_folders (bool):
+        custom_path (str):
+
+    Returns:
+        filenames downloaded from the RSS feed
+
+    """
+    filenames = []
+    url = f"http://feeds.soundcloud.com/users/soundcloud:users:{track_id}/sounds.rss"
+    response = requests.get(url)
+    if response.status_code != 200:
+        puts(colored.red("Problem downloading: ") + colored.white(url))
+        return None
+
+    feed = atoma.parse_rss_bytes(response.content)
+    for feed_item in feed.items:
+        if len(feed_item.enclosures) == 0:
+            continue
+
+        for enclosure in feed_item.enclosures:
+            track_data = {
+                "url": enclosure.url,
+                "artist": artist,
+                "title": feed_item.title,
+                "date": feed_item.pub_date.year,
+                "artwork_url": feed.image.url,
+            }
+
+            filename = download_single_track(track_data, use_folders, custom_path)
+            if filename is not None:
+                filenames.append(filename)
+    return filenames
 
 
 def download_single_track(track_data, use_folders=False, custom_path=""):
