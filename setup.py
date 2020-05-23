@@ -22,6 +22,9 @@ setup(
     version=soundscrape.__version__,
     packages=["soundscrape"],
     install_requires=required,
+    extras_requires={
+        "tests": ["pytest"],
+    },
     include_package_data=True,
     license="MIT License",
     description="Scrape an artist from SoundCloud",
