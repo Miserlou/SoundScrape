@@ -1,7 +1,9 @@
+"""Package setup for SoundScrape."""
 import os
-import soundscrape
 
 from setuptools import setup
+
+import soundscrape
 
 # Set external files
 try:

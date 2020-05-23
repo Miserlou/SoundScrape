@@ -1,11 +1,12 @@
+"""Tests for SoundScrape."""
 import glob
 import os
 
-from soundscrape.soundscrape import process_soundcloud
-from soundscrape.soundscrape import process_bandcamp
+from soundscrape.soundscrape import process_bandcamp, process_soundcloud
 
 
 def cleanup_files():
+    """Cleanup files from tests."""
     for f in glob.glob("*.mp3"):
         os.unlink(f)
     for f in glob.glob("*.m4a"):
@@ -13,6 +14,7 @@ def cleanup_files():
 
 
 def test_soundcloud():
+    """Basic SoundCloud test."""
     cleanup_files()
 
     mp3_count = len(glob.glob1("", "*.mp3"))
@@ -36,6 +38,7 @@ def test_soundcloud():
 
 
 def test_soundcloud_hard():
+    """Basic SoundCloud test."""
     cleanup_files()
     mp3_count = len(glob.glob1("", "*.mp3"))
     vargs = {
@@ -59,6 +62,7 @@ def test_soundcloud_hard():
 
 
 def test_bandcamp():
+    """Basic BandCamp test."""
     cleanup_files()
     mp3_count = len(glob.glob1("", "*.mp3"))
     vargs = {
@@ -80,6 +84,7 @@ def test_bandcamp():
 
 
 def test_bandcamp_slashes():
+    """Basic BandCamp test."""
     cleanup_files()
     mp3_count = len(glob.glob1("", "*.mp3"))
     vargs = {
@@ -101,11 +106,23 @@ def test_bandcamp_slashes():
 
 
 def test_mixcloud():
+    """Basic MixCloud test."""
     cleanup_files()
     # shortest mix I could find that was still semi tolerable
     # mp3_count = len(glob.glob1('', "*.mp3"))
     # m4a_count = len(glob.glob1('', "*.m4a"))
-    # vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://www.mixcloud.com/Bobby_T_FS15/coffee-cigarettes-saturday-morning-hip-hop-fix/'}
+    # vargs = {
+    #     "path": "",
+    #     "folders": False,
+    #     "group": False,
+    #     "track": "",
+    #     "num_tracks": 9223372036854775807,
+    #     "bandcamp": False,
+    #     "downloadable": False,
+    #     "likes": False,
+    #     "open": False,
+    #     "artist_url": "https://www.mixcloud.com/Bobby_T_FS15/coffee-cigarettes-saturday-morning-hip-hop-fix/",
+    # }
     # process_mixcloud(vargs)
     # new_mp3_count = len(glob.glob1('', "*.mp3"))
     # new_m4a_count = len(glob.glob1('', "*.m4a"))

@@ -1,25 +1,27 @@
 #! /usr/bin/env python
+"""Main SoundScrape module."""
 from __future__ import unicode_literals
 
 import argparse
-import atoma
-import demjson
 import os
 import re
-import requests
-import soundcloud
 import sys
 import urllib
-
-from clint.textui import colored, puts, progress
 from datetime import datetime
-from mutagen import MutagenError
-from mutagen.mp3 import MP3, EasyMP3, HeaderNotFoundError
-from mutagen.id3 import APIC, WXXX
-from mutagen.id3 import ID3 as OldID3
-from subprocess import Popen, PIPE
+from os import W_OK, access, mkdir
 from os.path import dirname, exists, join
-from os import access, mkdir, W_OK
+from subprocess import PIPE, Popen
+
+import atoma
+import demjson
+import requests
+import soundcloud
+from clint.textui import colored, progress, puts
+from mutagen import MutagenError
+from mutagen.id3 import APIC
+from mutagen.id3 import ID3 as OldID3
+from mutagen.id3 import WXXX
+from mutagen.mp3 import MP3, EasyMP3, HeaderNotFoundError
 from sanitize_filename import sanitize
 
 ####################################################################
