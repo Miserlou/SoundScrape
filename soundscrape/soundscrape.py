@@ -84,7 +84,6 @@ def main():
     parser.add_argument(
         "-o", "--open", action="store_true", help="Open downloaded files after downloading.",
     )
-    parser.add_argument("-k", "--keep", action="store_true", help="Keep 30-second preview tracks")
     parser.add_argument(
         "-v", "--version", action="store_true", default=False, help="Display the current version of SoundScrape",
     )
@@ -131,7 +130,6 @@ def process_soundcloud(vargs):
     """Main SoundCloud path."""
     url = vargs["artist_url"].lower()
     track_permalink = vargs["track"].lower()
-    keep_previews = vargs["keep"]
     num_tracks = vargs["num_tracks"]
     use_folders = vargs["folders"]
     custom_path = vargs["path"]
