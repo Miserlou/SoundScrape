@@ -225,6 +225,8 @@ def process_soundcloud(vargs):
     if vargs["open"]:
         open_files(filenames)
 
+    return
+
 
 def force_download_track_from_soundcloud(message, use_folders=False, custom_path=""):
     """
@@ -245,12 +247,12 @@ def force_download_track_from_soundcloud(message, use_folders=False, custom_path
 
     item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
     url = get_soundcloud_track_url(item_id)
-    request = requests.get(url)
-    if request.status_code != 200:
+    response = requests.get(url)
+    if response.status_code != 200:
         puts(colored.red("Problem downloading: ") + colored.white(url))
         return None
 
-    title_tag = request.text.split("<title>")[1].split("</title")[0]
+    title_tag = response.text.split("<title>")[1].split("</title")[0]
 
     track_data = {
         "url": url,
@@ -513,6 +515,8 @@ def process_bandcamp(vargs):
     if vargs["open"]:
         open_files(filenames)
 
+    return
+
 
 # Largely borrowed from bandcampscrape
 # ( reference: https://github.com/ronier/bandcampscrape)
@@ -610,9 +614,9 @@ def get_bandcamp_metadata(url):
     or a JSON if we can already parse album/track info from the given url.
     The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
     """
-    request = requests.get(url)
+    response = requests.get(url)
     try:
-        sloppy_json = request.text.split("var TralbumData = ")
+        sloppy_json = response.text.split("var TralbumData = ")
         sloppy_json = sloppy_json[1].replace('" + "', "")
         sloppy_json = sloppy_json.replace("'", "'")
         sloppy_json = sloppy_json.split("};")[0] + "};"
@@ -622,7 +626,7 @@ def get_bandcamp_metadata(url):
     # so we generate a list of albums/tracks and return it immediately
     except:
         regex_all_albums = r'<a href="(/(?:album|track)/[^>]+)">'
-        all_albums = re.findall(regex_all_albums, request.text, re.MULTILINE)
+        all_albums = re.findall(regex_all_albums, response.text, re.MULTILINE)
         album_url_list = list()
         for album in all_albums:
             album_url = re.sub(r"music/?$", "", url) + album
@@ -631,7 +635,7 @@ def get_bandcamp_metadata(url):
     # if the JSON parser was successful, use a regex to get all tags
     # from this album/track, join them and set it as the "genre"
     regex_tags = r'<a class="tag" href[^>]+>([^<]+)</a>'
-    tags = re.findall(regex_tags, request.text, re.MULTILINE)
+    tags = re.findall(regex_tags, response.text, re.MULTILINE)
     # make sure we treat integers correctly with join()
     # according to http://stackoverflow.com/a/7323861
     # (very unlikely, but better safe than sorry!)
@@ -641,12 +645,12 @@ def get_bandcamp_metadata(url):
     # case the album name remains set as None.
     output["album_name"] = None
     regex_album_name = r'album_title\s*:\s*"([^"]+)"\s*,'
-    match = re.search(regex_album_name, request.text, re.MULTILINE)
+    match = re.search(regex_album_name, response.text, re.MULTILINE)
     if match:
         output["album_name"] = match.group(1)
 
     try:
-        artUrl = request.text.split('"tralbumArt">')[1].split('">')[0].split('href="')[1]
+        artUrl = response.text.split('"tralbumArt">')[1].split('">')[0].split('href="')[1]
         output["artFullsizeUrl"] = artUrl
     except:
         puts_safe(colored.red("Couldn't get full artwork") + "")
@@ -667,16 +671,17 @@ def process_mixcloud(vargs):
     Args:
         vargs (dict):
     """
-    artist_url = vargs["artist_url"]
+    url = vargs["artist_url"].lower()
+    num_tracks = vargs["num_tracks"]
+    use_folders = vargs["folders"]
+    custom_path = vargs["path"]
 
-    if "mixcloud.com" in artist_url:
-        mc_url = artist_url
+    if "mixcloud.com" in url:
+        mc_url = url
     else:
-        mc_url = f"https://mixcloud.com/{artist_url}"
+        mc_url = f"https://mixcloud.com/{url}"
 
-    filenames = scrape_mixcloud_url(
-        mc_url, num_tracks=vargs["num_tracks"], use_folders=vargs["folders"], custom_path=vargs["path"],
-    )
+    filenames = scrape_mixcloud_url(mc_url, num_tracks, use_folders, custom_path)
 
     if vargs["open"]:
         open_files(filenames)
@@ -741,8 +746,8 @@ def get_mixcloud_data(url):
 
     """
     data = {}
-    request = requests.get(url)
-    preview_mp3_url = request.text.split('m-preview="')[1].split('" m-preview-light')[0]
+    response = requests.get(url)
+    preview_mp3_url = response.text.split('m-preview="')[1].split('" m-preview-light')[0]
     song_uuid = preview_mp3_url.split("previews/")[1].split(".mp3")[0]
 
     # Fish for the m4a.
@@ -757,11 +762,11 @@ def get_mixcloud_data(url):
         except:
             continue
 
-    full_title = request.text.split("<title>")[1].split(" | Mixcloud")[0]
+    full_title = response.text.split("<title>")[1].split(" | Mixcloud")[0]
     title = full_title.split(" by ")[0].strip()
     artist = full_title.split(" by ")[1].strip()
 
-    img_thumbnail_url = request.text.split('m-thumbnail-url="')[1].split(" ng-class")[0]
+    img_thumbnail_url = response.text.split('m-thumbnail-url="')[1].split(" ng-class")[0]
     artwork_url = img_thumbnail_url.replace("60/", "300/").replace("60/", "300/").replace("//", "https://").replace('"', "")
 
     data["mp3_url"] = mp3_url
@@ -798,6 +803,8 @@ def process_audiomack(vargs):
 
     if vargs["open"]:
         open_files(filenames)
+
+    return
 
 
 def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, use_folders=False, custom_path=""):
@@ -856,12 +863,12 @@ def get_audiomack_data(url):
 
     """
     data = {}
-    request = requests.get(url)
+    response = requests.get(url)
 
-    mp3_url = request.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
-    artist = request.text.split('<span class="artist">')[1].split("</span>")[0].strip()
-    title = request.text.split('<span class="artist">')[1].split("</span>")[1].split("</h1>")[0].strip()
-    artwork_url = request.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
+    mp3_url = response.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
+    artist = response.text.split('<span class="artist">')[1].split("</span>")[0].strip()
+    title = response.text.split('<span class="artist">')[1].split("</span>")[1].split("</h1>")[0].strip()
+    artwork_url = response.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
 
     data["mp3_url"] = mp3_url
     data["title"] = title
@@ -910,6 +917,8 @@ def process_musicbed(vargs):
 
     if vargs["open"]:
         open_files(filenames)
+
+    return
 
 
 def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, use_folders=False, custom_path=""):
