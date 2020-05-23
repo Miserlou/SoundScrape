@@ -1,9 +1,9 @@
-import pytest
 import glob
 import os
 
 from soundscrape.soundscrape import process_soundcloud
 from soundscrape.soundscrape import process_bandcamp
+
 
 def cleanup_files():
     for f in glob.glob("*.mp3"):
@@ -33,6 +33,7 @@ def test_soundcloud():
     new_mp3_count = len(glob.glob1("", "*.mp3"))
     assert new_mp3_count > mp3_count
     cleanup_files()
+
 
 def test_soundcloud_hard_2():
     cleanup_files()
