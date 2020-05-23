@@ -35,7 +35,7 @@ def test_soundcloud():
     cleanup_files()
 
 
-def test_soundcloud_hard_2():
+def test_soundcloud_hard():
     cleanup_files()
     mp3_count = len(glob.glob1("", "*.mp3"))
     vargs = {
@@ -54,7 +54,7 @@ def test_soundcloud_hard_2():
     process_soundcloud(vargs)
     new_mp3_count = len(glob.glob1("", "*.mp3"))
     assert new_mp3_count > mp3_count
-    assert new_mp3_count == 1  # This used to be 3, but is now 'Not available in United States.'
+    assert new_mp3_count == 1
     cleanup_files()
 
 
