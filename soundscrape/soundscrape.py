@@ -14,7 +14,7 @@ import urllib
 from clint.textui import colored, puts, progress
 from datetime import datetime
 from mutagen import MutagenError
-from mutagen.mp3 import MP3, EasyMP3
+from mutagen.mp3 import MP3, EasyMP3, HeaderNotFoundError
 from mutagen.id3 import APIC, WXXX
 from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
@@ -69,7 +69,7 @@ def main():
         "-L", "--login", type=str, default="soundscrape123@mailinator.com", help="Set login",
     )
     parser.add_argument(
-        "-d", "--downloadable", action="store_true", help="Only fetch tracks with a Downloadable link.",
+        "-d", "--downloadable", action="store_true", help="Only fetch tracks with a downloadable link.",
     )
     parser.add_argument(
         "-t", "--track", type=str, default="", help="The name of a specific track by an artist",
@@ -135,7 +135,8 @@ def process_soundcloud(vargs):
     folders = vargs["folders"]
     num_tracks = vargs["num_tracks"]
 
-    id3_extras = {}
+    album = None
+    artist = None
     filenames = []
     likes = False
     client = soundcloud.Client(client_id=CLIENT_ID)
@@ -203,8 +204,8 @@ def process_soundcloud(vargs):
         tracks = resolved
     else:
         if resolved.kind == "playlist":
-            id3_extras["album"] = resolved.title
-            if resolved.tracks != []:
+            album = resolved.title
+            if len(resolved.tracks) > 0:
                 tracks = resolved.tracks
             else:
                 tracks = get_soundcloud_playlist_data(resolved.id)["tracks"]
@@ -222,6 +223,7 @@ def process_soundcloud(vargs):
                         "url": get_soundcloud_track_url(track["id"]),
                         "artist": artist,
                         "title": resolved.title,
+                        "album": album,
                     }
                     filename = download_single_track(track_data, use_folders=folders, custom_path=vargs["path"])
                     if filename is not None:
@@ -232,6 +234,10 @@ def process_soundcloud(vargs):
             tracks = client.get(f"/groups/{resolved.id}/tracks", limit=200)
         else:
             tracks = client.get(f"/users/{resolved.id}/tracks", limit=200)
+
+        artist = resolved.full_name
+        if artist == "":
+            artist = resolved.username
 
         # SoundCloud has a unfortunate bug where some artists don't have any tracks returned using:
         #   client.get("/users/" + artist_id + "/tracks", limit=200)
@@ -255,10 +261,6 @@ def process_soundcloud(vargs):
                 if len(feed_item.enclosures) == 0:
                     continue
 
-                artist = resolved.full_name
-                if artist == "":
-                    artist = resolved.username
-
                 for enclosure in feed_item.enclosures:
                     track_data = {
                         "url": enclosure.url,
@@ -273,7 +275,7 @@ def process_soundcloud(vargs):
                         filenames.append(filename)
         else:
             filenames = download_tracks(
-                client, tracks, num_tracks, vargs["downloadable"], folders, vargs["path"], id3_extras=id3_extras,
+                client, tracks, artist, album, num_tracks, vargs["downloadable"], folders, vargs["path"],
             )
 
     if vargs["open"]:
@@ -333,94 +335,58 @@ def download_single_track(track_data, use_folders=False, custom_path=""):
 
 
 def download_tracks(
-    client, tracks, num_tracks=sys.maxsize, downloadable=False, use_folders=False, custom_path="", id3_extras={},
+    client, tracks, artist, album, num_tracks=sys.maxsize, downloadable_links_only=False, use_folders=False, custom_path="",
 ):
     """Given a list of tracks, iteratively download all of them."""
     filenames = []
 
     for i, track in enumerate(tracks):
         # "Track" and "Resource" objects are actually different, even though they're the same.
-        if isinstance(track, soundcloud.resource.Resource):
-            try:
-                t_track = {}
-                t_track["downloadable"] = track.downloadable
-                t_track["streamable"] = track.streamable
-                t_track["title"] = track.title
-                t_track["user"] = {"username": track.user["username"]}
-                t_track["release_year"] = track.release
-                t_track["genre"] = track.genre
-                t_track["artwork_url"] = track.artwork_url
-                if track.downloadable:
-                    t_track["stream_url"] = track.download_url
-                else:
-                    if downloadable:
-                        puts_safe(colored.red("Skipping: ") + colored.white(track.title))
-                        continue
-                    if hasattr(track, "stream_url"):
-                        t_track["stream_url"] = track.stream_url
-                    else:
-                        t_track["direct"] = True
-                        t_track["stream_url"] = get_soundcloud_track_url(track.id)
+        if not isinstance(track, soundcloud.resource.Resource):
+            continue
 
-                track = t_track
-            except:
-                puts_safe(colored.white(track.title) + colored.red(" is not downloadable."))
-                continue
+        track_data = {}
+        try:
+            track_data = {
+                "streamable": track.streamable,
+                "title": track.title,
+                "artist": artist,
+                "release_year": track.release,
+                "genre": track.genre,
+                "album": album,
+                "artwork_url": track.artwork_url,
+                "direct": False,
+            }
+            if track.downloadable:
+                track_data["url"] = track.download_url
+            else:
+                if downloadable_links_only:
+                    puts_safe(colored.red("Skipping: ") + colored.white(track.title))
+                    continue
+                if hasattr(track, "stream_url"):
+                    track_data["url"] = track.stream_url
+                else:
+                    track_data["url"] = get_soundcloud_track_url(track.id)
+                    track_data["direct"] = True
+        except:
+            puts_safe(colored.white(track.title) + colored.red(" is not downloadable."))
+            continue
 
         if i > num_tracks - 1:
             continue
         try:
-            if not track.get("stream_url", False):
-                puts_safe(colored.white(track["title"]) + colored.red(" is not downloadable."))
-                continue
-            else:
-                track_artist = sanitize(track["user"]["username"])
-                track_title = sanitize(track["title"])
-                track_filename = f"{track_artist} - {track_title}.mp3"
-
-                if use_folders:
-                    track_artist_path = join(custom_path, track_artist)
-                    if not exists(track_artist_path):
-                        mkdir(track_artist_path)
-                    track_filename = join(track_artist_path, track_filename)
+            if not track_data["direct"]:
+                stream = client.get(track_data["url"], allow_redirects=False, limit=200)
+                if hasattr(stream, "location"):
+                    track_data["url"] = stream.location
                 else:
-                    track_filename = join(custom_path, track_filename)
+                    track_data["url"] = stream.url
 
-                if exists(track_filename):
-                    puts_safe(colored.yellow("Track already downloaded: ") + colored.white(track_title))
-                    continue
-
-                puts_safe(colored.green("Downloading: ") + colored.white(track["title"]))
-
-                if track.get("direct", False):
-                    location = track["stream_url"]
-                else:
-                    stream = client.get(track["stream_url"], allow_redirects=False, limit=200)
-                    if hasattr(stream, "location"):
-                        location = stream.location
-                    else:
-                        location = stream.url
-
-                filename = download_file(location, track_filename)
-
-                tagged = tag_file(
-                    filename,
-                    artist=track["user"]["username"],
-                    title=track["title"],
-                    year=track["release_year"],
-                    genre=track["genre"],
-                    album=id3_extras.get("album", None),
-                    artwork_url=track["artwork_url"],
-                )
-
-                if not tagged:
-                    wav_filename = f"{filename[:-3]}wav"
-                    os.rename(filename, wav_filename)
-                    filename = wav_filename
-
+            filename = download_single_track(track_data, use_folders, custom_path)
+            if filename is not None:
                 filenames.append(filename)
         except Exception as e:
-            puts_safe(colored.red("Problem downloading ") + colored.white(track["title"]))
+            puts_safe(colored.red("Problem downloading ") + colored.white(track_data["title"]))
             puts_safe(str(e))
 
     return filenames
@@ -1074,14 +1040,19 @@ def tag_file(
         url (str):
 
     """
-    # TODO: move year to date.
     saved_correctly = True
 
-    audio = EasyMP3(filename)
+    try:
+        audio = EasyMP3(filename)
+    except HeaderNotFoundError:
+        puts(colored.red("Problem opening file: ") + colored.white("Is this file a WAV?"))
+        return False
+
     audio.tags = None
     audio["artist"] = artist
     audio["title"] = title
     if year is not None:
+        # TODO: move year to date.
         audio["date"] = str(year)
     if album is not None:
         audio["album"] = album
@@ -1099,11 +1070,17 @@ def tag_file(
         puts(colored.red("Problem tagging file: ") + colored.white("Is this file a WAV?"))
         saved_correctly = False
 
-    audio = MP3(filename, ID3=OldID3)
+    try:
+        audio = MP3(filename, ID3=OldID3)
+    except HeaderNotFoundError:
+        puts(colored.red("Problem opening file: ") + colored.white("Is this file a WAV?"))
+        return False
+
     if artwork_url is not None:
+        mime = "image/jpeg"
         artwork_url = artwork_url.replace("https", "http")
         urls = [artwork_url]
-        if "-large" in url:
+        if "-large" in artwork_url:
             urls.insert(0, artwork_url.replace("-large", "-t500x500"))
 
         image_data = b"0"
@@ -1111,11 +1088,11 @@ def tag_file(
             response = requests.get(a_url)
             if response.status_code != 200:
                 continue
-            image_data = response.content
 
-        mime = "image/jpeg"
-        if ".png" in artwork_url:
-            mime = "image/png"
+            if ".png" in a_url:
+                mime = "image/png"
+            image_data = response.content
+            break
 
         # encoding=3 means utf-8
         # type=3 means cover image
