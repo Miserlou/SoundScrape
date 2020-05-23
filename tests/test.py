@@ -103,3 +103,28 @@ def test_bandcamp_slashes():
     new_mp3_count = len(glob.glob1("", "*.mp3"))
     assert new_mp3_count > mp3_count
     cleanup_files()
+
+
+def test_mixcloud():
+    """Basic MixCloud test."""
+    cleanup_files()
+    # shortest mix I could find that was still semi tolerable
+    # mp3_count = len(glob.glob1('', "*.mp3"))
+    # m4a_count = len(glob.glob1('', "*.m4a"))
+    # vargs = {
+    #     "path": "",
+    #     "folders": False,
+    #     "group": False,
+    #     "track": "",
+    #     "num_tracks": 9223372036854775807,
+    #     "bandcamp": False,
+    #     "downloadable": False,
+    #     "likes": False,
+    #     "open": False,
+    #     "artist_url": "https://www.mixcloud.com/Bobby_T_FS15/coffee-cigarettes-saturday-morning-hip-hop-fix/",
+    # }
+    # process_mixcloud(vargs)
+    # new_mp3_count = len(glob.glob1('', "*.mp3"))
+    # new_m4a_count = len(glob.glob1('', "*.m4a"))
+    # self.assertTrue((new_mp3_count > mp3_count) or (new_m4a_count > m4a_count))
+    cleanup_files()
