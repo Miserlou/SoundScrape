@@ -172,7 +172,7 @@ def process_soundcloud(vargs):
                 resolved.collection.extend(next_resolved)
             resolved = resolved.collection
     except Exception as e:
-        filename = force_download_from_soundcloud(str(e), use_folders, custom_path)
+        filename = force_download_track_from_soundcloud(str(e), use_folders, custom_path)
         if filename is not None:
             filenames.append(filename)
 
@@ -208,9 +208,9 @@ def process_soundcloud(vargs):
         # is in the form of:
         #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
-        filenames = download_from_soundcloud_feed(resolved.id, artist, use_folders, custom_path)
+        filenames = download_tracks_from_soundcloud_feed(resolved.id, artist, use_folders, custom_path)
     else:
-        filenames = download_tracks(
+        filenames = download_tracks_from_soundcloud(
             client, tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
         )
 
@@ -218,7 +218,7 @@ def process_soundcloud(vargs):
         open_files(filenames)
 
 
-def force_download_from_soundcloud(message, use_folders=False, custom_path=""):
+def force_download_track_from_soundcloud(message, use_folders=False, custom_path=""):
     """
     Try to force download a track from SoundCloud despite a client error.
 
@@ -249,10 +249,10 @@ def force_download_from_soundcloud(message, use_folders=False, custom_path=""):
         "artist": title_tag.split(" by ")[1].split("|")[0].strip(),
         "title": title_tag.split(" by ")[0].strip(),
     }
-    return download_single_track(track_data, use_folders, custom_path)
+    return download_single_track_from_soundcloud(track_data, use_folders, custom_path)
 
 
-def download_from_soundcloud_feed(track_id, artist, use_folders=False, custom_path=""):
+def download_tracks_from_soundcloud_feed(track_id, artist, use_folders=False, custom_path=""):
     """
     Use the artist's RSS feed from SoundCloud to get tracks.
 
@@ -287,13 +287,13 @@ def download_from_soundcloud_feed(track_id, artist, use_folders=False, custom_pa
                 "artwork_url": feed.image.url,
             }
 
-            filename = download_single_track(track_data, use_folders, custom_path)
+            filename = download_single_track_from_soundcloud(track_data, use_folders, custom_path)
             if filename is not None:
                 filenames.append(filename)
     return filenames
 
 
-def download_single_track(track_data, use_folders=False, custom_path=""):
+def download_single_track_from_soundcloud(track_data, use_folders=False, custom_path=""):
     """
     Download a single track from SoundCloud.
 
@@ -345,7 +345,7 @@ def download_single_track(track_data, use_folders=False, custom_path=""):
     return filename
 
 
-def download_tracks(
+def download_tracks_from_soundcloud(
     client, tracks, artist, album, num_tracks=sys.maxsize, downloadable_links_only=False, use_folders=False, custom_path="",
 ):
     """Given a list of tracks, iteratively download all of them."""
@@ -362,7 +362,7 @@ def download_tracks(
                 playlist_tracks = get_soundcloud_playlist_data(track_id)
                 playlist_tracks = playlist_tracks["tracks"] if playlist_tracks is not None else None
             if playlist_tracks is not None:
-                download_tracks(
+                download_tracks_from_soundcloud(
                     client, playlist_tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
                 )
             else:
@@ -412,11 +412,11 @@ def download_tracks(
                 else:
                     track_data["url"] = stream.url
 
-            filename = download_single_track(track_data, use_folders, custom_path)
+            filename = download_single_track_from_soundcloud(track_data, use_folders, custom_path)
             if filename is not None:
                 filenames.append(filename)
         except Exception as e:
-            filename = force_download_from_soundcloud(str(e), use_folders, custom_path)
+            filename = force_download_track_from_soundcloud(str(e), use_folders, custom_path)
             if filename is not None:
                 filenames.append(filename)
             else:
