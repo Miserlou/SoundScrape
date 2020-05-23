@@ -61,9 +61,6 @@ def main():
         "-b", "--bandcamp", action="store_true", help="Use if downloading from Bandcamp rather than SoundCloud",
     )
     parser.add_argument(
-        "-m", "--mixcloud", action="store_true", help="Use if downloading from Mixcloud rather than SoundCloud",
-    )
-    parser.add_argument(
         "-a", "--audiomack", action="store_true", help="Use if downloading from Audiomack rather than SoundCloud",
     )
     parser.add_argument("-l", "--likes", action="store_true", help="Download all of a user's Likes.")
@@ -113,8 +110,6 @@ def main():
 
     if "bandcamp.com" in vargs["artist_url"] or vargs["bandcamp"]:
         process_bandcamp(vargs)
-    elif "mixcloud.com" in vargs["artist_url"] or vargs["mixcloud"]:
-        process_mixcloud(vargs)
     elif "audiomack.com" in vargs["artist_url"] or vargs["audiomack"]:
         process_audiomack(vargs)
     elif "musicbed.com" in vargs["artist_url"]:
@@ -657,125 +652,6 @@ def get_bandcamp_metadata(url):
         output["artFullsizeUrl"] = None
 
     return output
-
-
-####################################################################
-# Mixcloud
-####################################################################
-
-
-def process_mixcloud(vargs):
-    """
-    Process MixCloud download.
-
-    Args:
-        vargs (dict):
-    """
-    url = vargs["artist_url"].lower()
-    num_tracks = vargs["num_tracks"]
-    use_folders = vargs["folders"]
-    custom_path = vargs["path"]
-
-    if "mixcloud.com" in url:
-        mc_url = url
-    else:
-        mc_url = f"https://mixcloud.com/{url}"
-
-    filenames = scrape_mixcloud_url(mc_url, num_tracks, use_folders, custom_path)
-
-    if vargs["open"]:
-        open_files(filenames)
-
-    return
-
-
-def scrape_mixcloud_url(mc_url, num_tracks=sys.maxsize, use_folders=False, custom_path=""):
-    """
-    Pull out artist and track info from a MixCloud URL.
-
-    Returns:
-        list: filenames to open
-
-    """
-    filenames = []
-
-    try:
-        data = get_mixcloud_data(mc_url)
-    except:
-        puts_safe(colored.red("Problem downloading ") + mc_url)
-        return filenames
-
-    track_artist = sanitize(data["artist"])
-    track_title = sanitize(data["title"])
-    track_filename = f"{track_artist} - {track_title}{data['mp3_url'][-4:]}"
-
-    if use_folders:
-        track_artist_path = join(custom_path, track_artist)
-        if not exists(track_artist_path):
-            mkdir(track_artist_path)
-        track_filename = join(track_artist_path, track_filename)
-    else:
-        track_filename = join(custom_path, track_filename)
-
-    if exists(track_filename):
-        puts_safe(colored.yellow("Skipping: ") + colored.white(data["title"]) + colored.yellow("- already exists!"))
-        return filenames
-
-    puts_safe(colored.green("Downloading: ") + colored.white(f"{data['artist']} - {data['title']} ({track_filename[-4:]})"))
-    download_file(data["mp3_url"], track_filename)
-    if track_filename[-4:] == ".mp3":
-        tag_file(
-            track_filename,
-            artist=data["artist"],
-            title=data["title"],
-            year=data["year"],
-            genre="Mix",
-            artwork_url=data["artwork_url"],
-        )
-    filenames.append(track_filename)
-
-    return filenames
-
-
-def get_mixcloud_data(url):
-    """
-    Scrapes a Mixcloud page for a track's important information.
-
-    Returns:
-        dict: containing audio data
-
-    """
-    data = {}
-    response = requests.get(url)
-    preview_mp3_url = response.text.split('m-preview="')[1].split('" m-preview-light')[0]
-    song_uuid = preview_mp3_url.split("previews/")[1].split(".mp3")[0]
-
-    # Fish for the m4a.
-    for server in range(1, 23):
-        # Ex: https://stream6.mixcloud.com/c/m4a/64/1/2/0/9/30fe-23aa-40da-9bf3-4bee2fba649d.m4a
-        mp3_url = f"https://stream{server}.mixcloud.com/c/m4a/64/{song_uuid}.m4a"
-        try:
-            if requests.head(mp3_url).status_code == 200:
-                if "?" in mp3_url:
-                    mp3_url = mp3_url.split("?")[0]
-                break
-        except:
-            continue
-
-    full_title = response.text.split("<title>")[1].split(" | Mixcloud")[0]
-    title = full_title.split(" by ")[0].strip()
-    artist = full_title.split(" by ")[1].strip()
-
-    img_thumbnail_url = response.text.split('m-thumbnail-url="')[1].split(" ng-class")[0]
-    artwork_url = img_thumbnail_url.replace("60/", "300/").replace("60/", "300/").replace("//", "https://").replace('"', "")
-
-    data["mp3_url"] = mp3_url
-    data["title"] = title
-    data["artist"] = artist
-    data["artwork_url"] = artwork_url
-    data["year"] = None
-
-    return data
 
 
 ####################################################################
