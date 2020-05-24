@@ -112,7 +112,6 @@ def test_soundcloud_tracks():
 def test_soundcloud_track_not_found():
     """Basic SoundCloud test with a track that can't be found."""
     cleanup_files()
-    mp3_count = len(glob.glob1("", "*.mp3"))
     vargs = {
         "path": "",
         "folders": False,
