@@ -719,11 +719,7 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, use_folders=False, cust
     puts_safe(colored.green("Downloading: ") + colored.white(f"{data['artist']} - {data['title']}"))
     download_file(data["mp3_url"], track_filename)
     tag_file(
-        track_filename,
-        artist=data["artist"],
-        title=data["title"],
-        year=data["year"],
-        artwork_url=data["artwork_url"],
+        track_filename, artist=data["artist"], title=data["title"], year=data["year"], artwork_url=data["artwork_url"],
     )
     filenames.append(track_filename)
 
@@ -746,10 +742,10 @@ def get_audiomack_data(url):
     artwork_url = response.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
 
     data = {
-    "mp3_url": mp3_url,
-    "title": title,
-    "artist": artist,
-    "artwork_url": artwork_url,
+        "mp3_url": mp3_url,
+        "title": title,
+        "artist": artist,
+        "artwork_url": artwork_url,
     }
 
     return data
