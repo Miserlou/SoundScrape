@@ -61,6 +61,30 @@ def test_soundcloud_hard():
     cleanup_files()
 
 
+def test_soundcloud_feed_download():
+    """Basic SoundCloud feed test."""
+    cleanup_files()
+    mp3_count = len(glob.glob1("", "*.mp3"))
+    vargs = {
+        "path": "",
+        "folders": False,
+        "group": False,
+        "track": "",
+        "num_tracks": 1,
+        "bandcamp": False,
+        "downloadable": False,
+        "likes": False,
+        "open": False,
+        "artist_url": "https://soundcloud.com/johnocallaghan",
+        "keep": False,
+    }
+    process_soundcloud(vargs)
+    new_mp3_count = len(glob.glob1("", "*.mp3"))
+    assert new_mp3_count > mp3_count
+    assert new_mp3_count == 1
+    cleanup_files()
+
+
 def test_bandcamp():
     """Basic BandCamp test."""
     cleanup_files()
