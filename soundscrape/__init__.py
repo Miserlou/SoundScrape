@@ -1,2 +1,5 @@
 """SoundScrape initialization."""
-__version__ = "0.31"
+
+# Semantic versioning
+# (reference: https://packaging.python.org/guides/distributing-packages-using-setuptools/#semantic-versioning-preferred)
+__version__ = "1.00"
