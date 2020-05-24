@@ -85,6 +85,30 @@ def test_soundcloud_artist_only():
     cleanup_files()
 
 
+def test_soundcloud_tracks():
+    """Basic SoundCloud test tracks."""
+    cleanup_files()
+    mp3_count = len(glob.glob1("", "*.mp3"))
+    vargs = {
+        "path": "",
+        "folders": False,
+        "group": False,
+        "track": "",
+        "num_tracks": 1,
+        "bandcamp": False,
+        "downloadable": False,
+        "likes": False,
+        "open": False,
+        "artist_url": "https://soundcloud.com/alan-seslowsky/tracks",
+        "keep": False,
+    }
+    process_soundcloud(vargs)
+    new_mp3_count = len(glob.glob1("", "*.mp3"))
+    assert new_mp3_count > mp3_count
+    assert new_mp3_count == 1
+    cleanup_files()
+
+
 def test_soundcloud_track_not_found():
     """Basic SoundCloud test with a track that can't be found."""
     cleanup_files()
