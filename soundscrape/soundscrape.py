@@ -178,6 +178,9 @@ def process_soundcloud(vargs):
         filename = force_download_track_from_soundcloud(str(e), use_folders, custom_path)
         if filename is not None:
             filenames.append(filename)
+        if vargs["open"]:
+            open_files(filenames)
+        return
 
     if not hasattr(resolved, "kind"):
         # This is either likes or sets.
@@ -242,6 +245,8 @@ def force_download_track_from_soundcloud(message, use_folders=False, custom_path
 
     item_id = message.rsplit("/", 1)[-1].split(".json")[0].split("?client_id")[0]
     url = get_soundcloud_track_url(item_id)
+    if url is None:
+        return None
     response = requests.get(url)
     if response.status_code != 200:
         puts(colored.red("Problem downloading: ") + colored.white(url))
