@@ -211,7 +211,7 @@ def process_soundcloud(vargs):
         # is in the form of:
         #   http://feeds.soundcloud.com/users/soundcloud:users:<artist_id>/sounds.rss
 
-        filenames = download_tracks_from_soundcloud_feed(resolved.id, artist, use_folders, custom_path)
+        filenames = download_tracks_from_soundcloud_feed(resolved.id, artist, num_tracks, use_folders, custom_path)
     else:
         filenames = download_tracks_from_soundcloud(
             client, tracks, artist, album, num_tracks, downloadable_links_only, use_folders, custom_path,
@@ -257,13 +257,14 @@ def force_download_track_from_soundcloud(message, use_folders=False, custom_path
     return download_single_track_from_soundcloud(track_data, use_folders, custom_path)
 
 
-def download_tracks_from_soundcloud_feed(track_id, artist, use_folders=False, custom_path=""):
+def download_tracks_from_soundcloud_feed(track_id, artist, num_tracks=sys.maxsize, use_folders=False, custom_path=""):
     """
     Use the artist's RSS feed from SoundCloud to get tracks.
 
     Args:
         track_id (int):
         artist (str):
+        num_tracks (int):
         use_folders (bool):
         custom_path (str):
 
@@ -279,8 +280,8 @@ def download_tracks_from_soundcloud_feed(track_id, artist, use_folders=False, cu
         return None
 
     feed = atoma.parse_rss_bytes(response.content)
-    for feed_item in feed.items:
-        if len(feed_item.enclosures) == 0:
+    for i, feed_item in enumerate(feed.items):
+        if i > num_tracks - 1:
             continue
 
         for enclosure in feed_item.enclosures:
@@ -648,7 +649,7 @@ def get_bandcamp_metadata(url):
         artUrl = response.text.split('"tralbumArt">')[1].split('">')[0].split('href="')[1]
         output["artFullsizeUrl"] = artUrl
     except:
-        puts_safe(colored.red("Couldn't get full artwork") + "")
+        puts_safe(colored.red("Couldn't get full artwork."))
         output["artFullsizeUrl"] = None
 
     return output
@@ -722,7 +723,6 @@ def scrape_audiomack_url(mc_url, num_tracks=sys.maxsize, use_folders=False, cust
         artist=data["artist"],
         title=data["title"],
         year=data["year"],
-        genre=None,
         artwork_url=data["artwork_url"],
     )
     filenames.append(track_filename)
@@ -738,7 +738,6 @@ def get_audiomack_data(url):
         dict: containing audio data
 
     """
-    data = {}
     response = requests.get(url)
 
     mp3_url = response.text.split('class="player-icon download-song" title="Download" href="')[1].split('"')[0]
@@ -746,11 +745,12 @@ def get_audiomack_data(url):
     title = response.text.split('<span class="artist">')[1].split("</span>")[1].split("</h1>")[0].strip()
     artwork_url = response.text.split('<a class="lightbox-trigger" href="')[1].split('" data')[0].strip()
 
-    data["mp3_url"] = mp3_url
-    data["title"] = title
-    data["artist"] = artist
-    data["artwork_url"] = artwork_url
-    data["year"] = None
+    data = {
+    "mp3_url": mp3_url,
+    "title": title,
+    "artist": artist,
+    "artwork_url": artwork_url,
+    }
 
     return data
 
@@ -1026,7 +1026,6 @@ def tag_file(
         if "-large" in artwork_url:
             urls.insert(0, artwork_url.replace("-large", "-t500x500"))
 
-        image_data = b"0"
         for a_url in urls:
             response = requests.get(a_url)
             if response.status_code != 200:
@@ -1034,12 +1033,12 @@ def tag_file(
 
             if ".png" in a_url:
                 mime = "image/png"
-            image_data = response.content
+
+            # encoding=3 means utf-8
+            # type=3 means cover image
+            audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=response.content))
             break
 
-        # encoding=3 means utf-8
-        # type=3 means cover image
-        audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=image_data))
     if url is not None:
         # Some software doesn't seem to use WOAR so the url is saved again as WXXX.
         audio.tags.add(WXXX(encoding=3, url=url))
