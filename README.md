@@ -1,9 +1,9 @@
 ![SoundScrape!](http://i.imgur.com/nHAt2ow.png)
 
-SoundScrape [![Build Status](https://travis-ci.org/Miserlou/SoundScrape.svg)](https://travis-ci.org/Miserlou/SoundScrape) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![PyPI](https://img.shields.io/pypi/v/soundscrape.svg)](https://pypi.python.org/pypi/SoundScrape)
+SoundScrape [![Build Status](https://github.com/Miserlou/SoundScrape/workflows/SoundScrape%20CI/badge.svg)](https://github.com/Miserlou/SoundScrape/actions) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![PyPI](https://img.shields.io/pypi/v/soundscrape.svg)](https://pypi.python.org/pypi/SoundScrape)
 ==============
 
-**SoundScrape** makes it super easy to download artists from SoundCloud (and Bandcamp and MixCloud) - even those which don't have download links! It automatically creates ID3 tags as well (including album art), which is handy.
+**SoundScrape** makes it super easy to download artists from SoundCloud (and others) - even those which don't have download links! It automatically creates ID3 tags as well (including album art), which is handy.
 
 Usage
 ---------
@@ -91,15 +91,6 @@ By default, SoundScrape will try to rip everything it can. However, if you only 
 soundscrape sly-dogg -d
 ```
 
-Keep Preview Tracks
---------
-
-By default, SoundScrape will skip the 30-second preview tracks that SoundCloud now provides. You can choose to keep these preview snippets with the *-k* argument.
-
-```bash
-soundscrape chromeo -k
-```
-
 Folders
 --------
 
@@ -133,19 +124,6 @@ soundscrape -b http://music.monstercat.com/
 ```
 
 Note that the full URL must be included.
-
-Mixcloud
---------
-
-SoundScrape can also grab mixes from Mixcloud. This feature is extremely expermental and is in no way guaranteed to work!
-
-Finds the original mp3 of a mix and grabs that (with tags and album art) if it can, or else just gets the raw m4a stream.
-
-Mixcloud currently only takes an invidiual mix. Capacity for a whole artist's profile due shortly.
-
-```bash
-soundscrape https://www.mixcloud.com/corenewsuploads/flume-essential-mix-2015-10-03/ -of
-```
 
 Audiomack
 --------
