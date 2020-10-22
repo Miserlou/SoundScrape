@@ -693,17 +693,14 @@ def get_bandcamp_metadata(url):
     or a JSON if we can already parse album/track info from the given url.
     """
     request = requests.get(url)
+    output = {}
     try:
-        track_data, album_data = (
-            extract_embedded_json_from_attribute(
-                request, attr, debug=False
+        for attr in ['data-tralbum', 'data-embed']:
+            output.update(
+                extract_embedded_json_from_attribute(
+                    request, attr, debug=True
+                )
             )
-            for attr in ['data-tralbum', 'data-embed']
-        )
-        output = {
-            **track_data,
-            **album_data,
-        }
     # if the JSON parser failed, we should consider it's a "/music" page,
     # so we generate a list of albums/tracks and return it immediately
     except Exception as e:
