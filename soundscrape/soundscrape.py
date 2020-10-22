@@ -651,21 +651,20 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     return filenames
 
 
-def extract_embedded_json_from_attribute(
-    request: requests.Response,
-    attribute: str,
-    debug: bool = False,
-) -> dict:
+def extract_embedded_json_from_attribute(request, attribute, debug=False):
     """
     Extract JSON object embedded in an element's attribute value.
 
     The JSON is "sloppy". The native python JSON parser often can't deal,
     so we use the more tolerant demjson instead.
 
-    :param request: a request response object
-    :param attribute: attribute name (e.g. ``data-tralbum``)
-    :param debug: whether to print debug messages
-    :return: embedded JSON as a dict, or None on fail
+    Args:
+        request (obj:`requests.Response`): HTTP GET response from which to extract
+        attribute (str): name of the attribute holding the desired JSON object
+        debug (bool, optional): whether to print debug messages
+
+    Returns:
+        The embedded JSON object as a dict, or None if extraction failed
     """
     try:
         embed = request.text.split('{}="'.format(attribute))[1]
