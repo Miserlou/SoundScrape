@@ -698,7 +698,7 @@ def get_bandcamp_metadata(url):
         for attr in ['data-tralbum', 'data-embed']:
             output.update(
                 extract_embedded_json_from_attribute(
-                    request, attr, debug=True
+                    request, attr
                 )
             )
     # if the JSON parser failed, we should consider it's a "/music" page,
