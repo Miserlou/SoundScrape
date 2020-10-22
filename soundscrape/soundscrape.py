@@ -583,8 +583,8 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
             filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders, custom_path))
         return filenames
 
-    artist = album_data["artist"]
-    album_name = album_data["album_name"]
+    artist = album_data.get("artist")
+    album_name = album_data.get("album_title")
 
     if folders:
         if album_name:
@@ -651,21 +651,60 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     return filenames
 
 
+def extract_embedded_json_from_attribute(
+    request: requests.Response,
+    attribute: str,
+    debug: bool = False,
+) -> dict:
+    """
+    Extract JSON object embedded in an element's attribute value.
+
+    The JSON is "sloppy". The native python JSON parser often can't deal,
+    so we use the more tolerant demjson instead.
+
+    :param request: a request response object
+    :param attribute: attribute name (e.g. ``data-tralbum``)
+    :param debug: whether to print debug messages
+    :return: embedded JSON as a dict, or None on fail
+    """
+    try:
+        embed = request.text.split('{}="'.format(attribute))[1]
+        embed = embed.split('"')[0].replace('&quot;', '"')
+        output = demjson.decode(embed)
+        if debug:
+            print(
+                'extracted JSON: '
+                + demjson.encode(
+                    output,
+                    compactly=False,
+                    indent_amount=2,
+                )
+            )
+    except Exception as e:
+        output = None
+        if debug:
+            print(e)
+    return output
+
+
 def get_bandcamp_metadata(url):
     """
-    Read information from the Bandcamp JavaScript object.
+    Read information from Bandcamp embedded JavaScript object notation.
     The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums),
     or a JSON if we can already parse album/track info from the given url.
-    The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
     """
     request = requests.get(url)
     try:
-        sloppy_json = request.text.split("var TralbumData = ")
-        sloppy_json = sloppy_json[1].replace('" + "', "")
-        sloppy_json = sloppy_json.replace("'", "\'")
-        sloppy_json = sloppy_json.split("};")[0] + "};"
-        sloppy_json = sloppy_json.replace("};", "}")
-        output = demjson.decode(sloppy_json)
+        track_data, album_data = (
+            extract_embedded_json_from_attribute(
+                request, attr, debug=False
+            )
+            for attr in ['data-tralbum', 'data-embed']
+        )
+        output = {
+            **track_data,
+            **album_data,
+        }
     # if the JSON parser failed, we should consider it's a "/music" page,
     # so we generate a list of albums/tracks and return it immediately
     except Exception as e:
@@ -684,14 +723,6 @@ def get_bandcamp_metadata(url):
     # according to http://stackoverflow.com/a/7323861
     # (very unlikely, but better safe than sorry!)
     output['genre'] = ' '.join(s for s in tags)
-    # make sure we always get the correct album name, even if this is a
-    # track URL (unless this track does not belong to any album, in which
-    # case the album name remains set as None.
-    output['album_name'] = None
-    regex_album_name = r'album_title\s*:\s*"([^"]+)"\s*,'
-    match = re.search(regex_album_name, request.text, re.MULTILINE)
-    if match:
-        output['album_name'] = match.group(1)
 
     try:
         artUrl = request.text.split("\"tralbumArt\">")[1].split("\">")[0].split("href=\"")[1]
