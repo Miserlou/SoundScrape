@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import argparse
 import demjson
+import html
 import os
 import re
 import requests
@@ -668,7 +669,9 @@ def extract_embedded_json_from_attribute(request, attribute, debug=False):
     """
     try:
         embed = request.text.split('{}="'.format(attribute))[1]
-        embed = embed.split('"')[0].replace('&quot;', '"')
+        embed = html.unescape(
+            embed.split('"')[0]
+        )
         output = demjson.decode(embed)
         if debug:
             print(
