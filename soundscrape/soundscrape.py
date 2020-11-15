@@ -1,6 +1,4 @@
 #! /usr/bin/env python
-from __future__ import unicode_literals
-
 import argparse
 import demjson
 import html
@@ -19,6 +17,11 @@ from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
 from os.path import dirname, exists, join
 from os import access, mkdir, W_OK
+
+if sys.version_info.minor < 4:
+    html_unescape = html.parser.HTMLParser().unescape
+else:
+    html_unescape = html.unescape
 
 ####################################################################
 
@@ -546,7 +549,12 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
+    filenames = scrape_bandcamp_url(
+        bc_url,
+        num_tracks=vargs['num_tracks'],
+        folders=vargs['folders'],
+        custom_path=vargs['path'],
+    )
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
@@ -581,7 +589,11 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     # so we call the scrape_bandcamp_url() method for each one
     if type(album_data) is list:
         for album_url in album_data:
-            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders, custom_path))
+            filenames.append(
+                scrape_bandcamp_url(
+                    album_url, num_tracks, folders, custom_path
+                )
+            )
         return filenames
 
     artist = album_data.get("artist")
@@ -669,7 +681,7 @@ def extract_embedded_json_from_attribute(request, attribute, debug=False):
     """
     try:
         embed = request.text.split('{}="'.format(attribute))[1]
-        embed = html.unescape(
+        embed = html_unescape(
             embed.split('"')[0]
         )
         output = demjson.decode(embed)
