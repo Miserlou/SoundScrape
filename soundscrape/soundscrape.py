@@ -1356,7 +1356,7 @@ def puts_safe(text):
         if sys.version_info < (3,0,0):
             puts(text)
         else:
-            puts(text.encode(sys.stdout.encoding, errors='replace').decode())
+            puts(text.encode('ascii', errors='replace').decode())
     else:
         puts(text)
 
