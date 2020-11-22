@@ -1145,6 +1145,12 @@ def scrape_musicbed_url(url, login, password, num_tracks=sys.maxsize, folders=Fa
             puts_safe( colored.red( 'scrape_musicbed_url: couldn\'t open url: ' + each_album_url +
                                     '. Status code: ' + str( response.status_code ) + '. Skipping.' ) )
             continue
+        # ANNOYING redirection to profile completion page
+        elif ( response.url == "https://www.musicbed.com/account/complete-profile" ):
+            puts_safe( colored.red( 'scrape_musicbed_url: redirected to profile completion page. Aborting. ' ) +
+                       colored.white( '\nYou should complete your profile on MusicBed site, otherwise SoundScrape can\'t find tracks.' ) )
+            session.close()
+            return []
 
         # actually not a JSON, but a JS object, but so far so good
         json = response.text.split( 'App.components.SongRows = ' )[1].split( '</script>' )[0]
@@ -1231,6 +1237,8 @@ def download_file(url, path, session=None, params=None):
         r = session.get( url, params=params, stream=True )
     elif session and not params:
         r = session.get( url, stream=True )
+    elif not session and params:
+        r = requests.get( url, params=params, stream=True )
     else:
         r = requests.get(url, stream=True)
     with open(tmp_path, 'wb') as f:
