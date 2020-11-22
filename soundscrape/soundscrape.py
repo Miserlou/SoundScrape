@@ -1,8 +1,7 @@
 #! /usr/bin/env python
-from __future__ import unicode_literals
-
 import argparse
 import demjson
+import html
 import os
 import re
 import requests
@@ -18,6 +17,11 @@ from mutagen.id3 import ID3 as OldID3
 from subprocess import Popen, PIPE
 from os.path import dirname, exists, join
 from os import access, mkdir, W_OK
+
+if sys.version_info.minor < 4:
+    html_unescape = html.parser.HTMLParser().unescape
+else:
+    html_unescape = html.unescape
 
 ####################################################################
 
@@ -545,7 +549,12 @@ def process_bandcamp(vargs):
     else:
         bc_url = 'https://' + artist_url + '.bandcamp.com/music'
 
-    filenames = scrape_bandcamp_url(bc_url, num_tracks=vargs['num_tracks'], folders=vargs['folders'], custom_path=vargs['path'])
+    filenames = scrape_bandcamp_url(
+        bc_url,
+        num_tracks=vargs['num_tracks'],
+        folders=vargs['folders'],
+        custom_path=vargs['path'],
+    )
 
     # check if we have lists inside a list, which indicates the
     # scraping has gone recursive, so we must format the output
@@ -580,11 +589,15 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     # so we call the scrape_bandcamp_url() method for each one
     if type(album_data) is list:
         for album_url in album_data:
-            filenames.append(scrape_bandcamp_url(album_url, num_tracks, folders, custom_path))
+            filenames.append(
+                scrape_bandcamp_url(
+                    album_url, num_tracks, folders, custom_path
+                )
+            )
         return filenames
 
-    artist = album_data["artist"]
-    album_name = album_data["album_name"]
+    artist = album_data.get("artist")
+    album_name = album_data.get("album_title")
 
     if folders:
         if album_name:
@@ -651,21 +664,58 @@ def scrape_bandcamp_url(url, num_tracks=sys.maxsize, folders=False, custom_path=
     return filenames
 
 
+def extract_embedded_json_from_attribute(request, attribute, debug=False):
+    """
+    Extract JSON object embedded in an element's attribute value.
+
+    The JSON is "sloppy". The native python JSON parser often can't deal,
+    so we use the more tolerant demjson instead.
+
+    Args:
+        request (obj:`requests.Response`): HTTP GET response from which to extract
+        attribute (str): name of the attribute holding the desired JSON object
+        debug (bool, optional): whether to print debug messages
+
+    Returns:
+        The embedded JSON object as a dict, or None if extraction failed
+    """
+    try:
+        embed = request.text.split('{}="'.format(attribute))[1]
+        embed = html_unescape(
+            embed.split('"')[0]
+        )
+        output = demjson.decode(embed)
+        if debug:
+            print(
+                'extracted JSON: '
+                + demjson.encode(
+                    output,
+                    compactly=False,
+                    indent_amount=2,
+                )
+            )
+    except Exception as e:
+        output = None
+        if debug:
+            print(e)
+    return output
+
+
 def get_bandcamp_metadata(url):
     """
-    Read information from the Bandcamp JavaScript object.
+    Read information from Bandcamp embedded JavaScript object notation.
     The method may return a list of URLs (indicating this is probably a "main" page which links to one or more albums),
     or a JSON if we can already parse album/track info from the given url.
-    The JSON is "sloppy". The native python JSON parser often can't deal, so we use the more tolerant demjson instead.
     """
     request = requests.get(url)
+    output = {}
     try:
-        sloppy_json = request.text.split("var TralbumData = ")
-        sloppy_json = sloppy_json[1].replace('" + "', "")
-        sloppy_json = sloppy_json.replace("'", "\'")
-        sloppy_json = sloppy_json.split("};")[0] + "};"
-        sloppy_json = sloppy_json.replace("};", "}")
-        output = demjson.decode(sloppy_json)
+        for attr in ['data-tralbum', 'data-embed']:
+            output.update(
+                extract_embedded_json_from_attribute(
+                    request, attr
+                )
+            )
     # if the JSON parser failed, we should consider it's a "/music" page,
     # so we generate a list of albums/tracks and return it immediately
     except Exception as e:
@@ -684,14 +734,6 @@ def get_bandcamp_metadata(url):
     # according to http://stackoverflow.com/a/7323861
     # (very unlikely, but better safe than sorry!)
     output['genre'] = ' '.join(s for s in tags)
-    # make sure we always get the correct album name, even if this is a
-    # track URL (unless this track does not belong to any album, in which
-    # case the album name remains set as None.
-    output['album_name'] = None
-    regex_album_name = r'album_title\s*:\s*"([^"]+)"\s*,'
-    match = re.search(regex_album_name, request.text, re.MULTILINE)
-    if match:
-        output['album_name'] = match.group(1)
 
     try:
         artUrl = request.text.split("\"tralbumArt\">")[1].split("\">")[0].split("href=\"")[1]

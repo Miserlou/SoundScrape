@@ -1,21 +1,20 @@
 import glob
 import os
-import re
-import string
 import sys
 import unittest
 
-import nose
-from nose import case
-from nose.pyversion import unbound_method
-from nose import util
-
+from mutagen.mp3 import EasyMP3
 from soundscrape.soundscrape import get_client
 from soundscrape.soundscrape import process_soundcloud
 from soundscrape.soundscrape import process_bandcamp
-from soundscrape.soundscrape import process_mixcloud
-from soundscrape.soundscrape import process_audiomack
-from soundscrape.soundscrape import process_musicbed
+
+
+def rm_mp3():
+    """ deletes all ``*.mp3`` files in current directory
+    """
+    for f in glob.glob('*.mp3'):
+        os.unlink(f)
+
 
 class TestSoundscrape(unittest.TestCase):
 
@@ -31,45 +30,33 @@ class TestSoundscrape(unittest.TestCase):
         self.assertTrue(bool(client))
 
     def test_soundcloud(self):
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
+        rm_mp3()
         mp3_count = len(glob.glob1('', "*.mp3"))
         vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/fzpz/revised', 'keep': True}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
-
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
+        rm_mp3()
 
     def test_soundcloud_hard(self):
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
+        rm_mp3()
         mp3_count = len(glob.glob1('', "*.mp3"))
         vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'puptheband', 'keep': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
         self.assertTrue(new_mp3_count == 1) # This used to be 3, but is now 'Not available in United States.'
-
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
+        rm_mp3()
 
     def test_soundcloud_hard_2(self):
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
+        rm_mp3()
         mp3_count = len(glob.glob1('', "*.mp3"))
         vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 1, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://soundcloud.com/lostdogz/snuggles-chapstick', 'keep': False}
         process_soundcloud(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
         self.assertTrue(new_mp3_count == 1) # This used to be 3, but is now 'Not available in United States.'
-
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
+        rm_mp3()
 
     # The test URL for this is no longer a WAV. Need a new testcase.
     #
@@ -88,30 +75,35 @@ class TestSoundscrape(unittest.TestCase):
     #        os.unlink(f)
 
     def test_bandcamp(self):
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
+        rm_mp3()
         mp3_count = len(glob.glob1('', "*.mp3"))
         vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://atenrays.bandcamp.com/track/who-u-think'}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
-
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
+        rm_mp3()
 
     def test_bandcamp_slashes(self):
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
+        rm_mp3()
         mp3_count = len(glob.glob1('', "*.mp3"))
         vargs = {'path':'', 'folders': False, 'group': False, 'track': '', 'num_tracks': 9223372036854775807, 'bandcamp': False, 'downloadable': False, 'likes': False, 'open': False, 'artist_url': 'https://defill.bandcamp.com/track/amnesia-chamber-harvest-skit'}
         process_bandcamp(vargs)
         new_mp3_count = len(glob.glob1('', "*.mp3"))
         self.assertTrue(new_mp3_count > mp3_count)
+        rm_mp3()
 
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
+    def test_bandcamp_html_entities(self):
+        rm_mp3()
+        vargs = {'path': '', 'folders': False, 'num_tracks': sys.maxsize, 'open': False, 'artist_url': 'https://anaalnathrakh.bandcamp.com/track/man-at-c-a-bonus-track'}
+        process_bandcamp(vargs)
+        mp3s = glob.glob('*.mp3')
+        self.assertEquals(1, len(mp3s))
+        fn = mp3s[0]
+        self.assertTrue('CandA' in fn)
+        t = EasyMP3(fn)['title']
+        self.assertTrue('C&A' in t[0])
+        rm_mp3()
+
 
     # def test_musicbed(self):
     #     for f in glob.glob('*.mp3'):
@@ -131,11 +123,9 @@ class TestSoundscrape(unittest.TestCase):
         MixCloud is being blocked from Travis, interestingly.
         """
 
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
-        for f in glob.glob('*.m4a'):
-           os.unlink(f)
+        # rm_mp3()
+        # for f in glob.glob('*.m4a'):
+        #    os.unlink(f)
 
         # shortest mix I could find that was still semi tolerable
         #mp3_count = len(glob.glob1('', "*.mp3"))
@@ -146,11 +136,9 @@ class TestSoundscrape(unittest.TestCase):
         #new_m4a_count = len(glob.glob1('', "*.m4a"))
         #self.assertTrue((new_mp3_count > mp3_count) or (new_m4a_count > m4a_count))
 
-        for f in glob.glob('*.mp3'):
-           os.unlink(f)
-
-        for f in glob.glob('*.m4a'):
-           os.unlink(f)
+        # rm_mp3()
+        # for f in glob.glob('*.m4a'):
+        #    os.unlink(f)
 
     # def test_audiomack(self):
     #     for f in glob.glob('*.mp3'):

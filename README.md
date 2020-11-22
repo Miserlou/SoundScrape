@@ -1,6 +1,6 @@
 ![SoundScrape!](http://i.imgur.com/nHAt2ow.png)
 
-SoundScrape [![Build Status](https://travis-ci.org/Miserlou/SoundScrape.svg)](https://travis-ci.org/Miserlou/SoundScrape) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![PyPI](https://img.shields.io/pypi/v/soundscrape.svg)](https://pypi.python.org/pypi/SoundScrape)
+SoundScrape [![Build Status](https://travis-ci.org/Miserlou/SoundScrape.svg)](https://travis-ci.org/Miserlou/SoundScrape) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/soundscrape/) [![PyPI](https://img.shields.io/pypi/v/soundscrape.svg)](https://pypi.python.org/pypi/SoundScrape)
 ==============
 
 **SoundScrape** makes it super easy to download artists from SoundCloud (and Bandcamp and MixCloud) - even those which don't have download links! It automatically creates ID3 tags as well (including album art), which is handy.
