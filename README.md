@@ -141,7 +141,7 @@ SoundScrape can also grab mixes from Mixcloud. This feature is extremely experme
 
 Finds the original mp3 of a mix and grabs that (with tags and album art) if it can, or else just gets the raw m4a stream.
 
-Mixcloud currently only takes an invidiual mix. Capacity for a whole artist's profile due shortly.
+Mixcloud currently only takes an individual mix. Capacity for a whole artist's profile due shortly.
 
 ```bash
 soundscrape https://www.mixcloud.com/corenewsuploads/flume-essential-mix-2015-10-03/ -of
