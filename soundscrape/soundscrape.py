@@ -167,28 +167,24 @@ def process_soundcloud(vargs):
             resolved = client.get('/resolve', url=track_url, limit=200)
 
         elif likes:
-            userId = str(client.get('/resolve', url=artist_url).id)
+            puts_safe(colored.green('Loading Likes...'))
+            user_id = str(client.get('/resolve', url=artist_url).id)
+            resolved = client.get('/users/' + user_id + '/favorites', limit=200, linked_partitioning=1)
+            next_href = getattr(resolved, 'next_href', None)
 
-            resolved = client.get('/users/' + userId + '/favorites', limit=200, linked_partitioning=1)
-            next_href = False
-            if(hasattr(resolved, 'next_href')):
-                next_href = resolved.next_href
-            while (next_href):
+            while next_href:
+                puts_safe(colored.white('Loading (more) likes...'))
+                temp_resolved = client.get(next_href)
+                next_href = getattr(temp_resolved, 'next_href', None)
 
-                resolved2 = requests.get(next_href).json()
-                if('next_href' in resolved2):
-                    next_href = resolved2['next_href']
-                else:
-                    next_href = False
-                resolved2 = soundcloud.resource.ResourceList(resolved2['collection'])
-                resolved.collection.extend(resolved2)
+                resolved.collection.extend(temp_resolved.collection)
+            puts_safe(colored.green('Loaded ' + str(len(resolved.collection)) + ' Likes...'))
             resolved = resolved.collection
 
         else:
             resolved = client.get('/resolve', url=artist_url, limit=200)
 
     except Exception as e:  # HTTPError?
-
         # SoundScrape is trying to prevent us from downloading this.
         # We're going to have to stop trusting the API/client and
         # do all our own scraping. Boo.
