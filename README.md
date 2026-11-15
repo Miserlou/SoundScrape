@@ -31,6 +31,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
 결과는 `dist/SoundScrape.exe` 및 SHA-256 체크섬입니다. 기존 `requirements.txt`는
 구형 CLI 전용이므로 데스크톱 빌드에서는 설치하지 않습니다.
 
+EXE 파일·창·작업 표시줄 아이콘은 `assets/soundscrape.ico`를 함께 사용합니다.
+기본 파형 디자인은 `assets/build-icon.ps1`에서 수정하고 실행하면 16~256px의
+7가지 해상도를 담은 ICO를 다시 만들 수 있습니다. 다른 디자인으로 바꿀 때는
+같은 경로의 ICO 파일을 교체한 뒤 EXE를 다시 빌드합니다.
+
 ## 실제 다운로드 검사
 
 메타데이터 조회만 하는 검사가 아닙니다. 전체 오디오를 내려받은 다음 FFmpeg로

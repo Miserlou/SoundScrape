@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'desktop.py'
+      - 'assets/**'
       - 'soundscrape/**'
       - 'tests/test_desktop.py'
       - 'requirements-desktop.txt'

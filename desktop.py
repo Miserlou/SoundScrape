@@ -14,6 +14,7 @@ from soundscrape.downloader import download, validate_url
 class App:
     def __init__(self, root):
         self.root = root
+        root.iconbitmap(default=str(Path(__file__).resolve().parent / "assets" / "soundscrape.ico"))
         self.events = queue.Queue()
         self.busy = False
         root.title("SoundScrape")
@@ -149,6 +150,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--smoke-test":
         from soundscrape.smoke import main
         raise SystemExit(main(sys.argv[2:]))
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SoundScrape.Desktop")
     window = tk.Tk()
     if "--check-runtime" in sys.argv:
         window.withdraw()
