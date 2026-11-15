@@ -70,9 +70,12 @@ EXE 파일·창·작업 표시줄 아이콘은 `assets/soundscrape.ico`를 함�
 업로드하지 않고 JSON 보고서만 artifact로 남깁니다. 사이트의 일시적인 실패가
 일반 PR 빌드를 막지 않도록 실시간 검사는 수동 실행 및 Release 태그 빌드에서 실행합니다.
 
-`v*` 태그를 push하면 빌드와 세 플랫폼의 다운로드 검사가 성공한 뒤
+`v*` 태그를 push하면 빌드와 다운로드 검사 후
 Windows x64 EXE와 체크섬이 첨부된 **draft Release**를 만듭니다.
 자동 빌드 결과와 다운로드 검사를 확인한 후 Release를 공개합니다.
+GitHub 실행 환경에 YouTube가 봇 확인을 요구하는 경우에 한해 해당 실시간 검사를
+건너뛰고 실패 보고서를 보존하며 Release 설명에도 제한을 기록합니다.
+그 밖의 YouTube 오류는 빌드를 실패 처리합니다.
 
 ```powershell
 git tag v0.32.0
