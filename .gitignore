@@ -4,3 +4,8 @@ env/
 *.bak
 build/
 dist/
+.venv/
+__pycache__/
+*.spec
+test-downloads/
+.local/
