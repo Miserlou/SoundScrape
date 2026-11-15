@@ -23,6 +23,10 @@ on:
         description: 'Public Mixcloud mix URL for a full download test'
         type: string
         default: 'https://www.mixcloud.com/dholbach/cryptkeeper/'
+      youtube_url:
+        description: 'Public YouTube video URL for an audio download test'
+        type: string
+        default: 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
 
 permissions:
   contents: read
@@ -42,6 +46,9 @@ jobs:
           cache-dependency-path: requirements-desktop.txt
       - name: Install desktop dependencies
         run: python -m pip install -r requirements-desktop.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.0'
       - name: Offline tests
         run: |
           python -m unittest discover -s tests -p test_desktop.py -v
@@ -72,6 +79,20 @@ jobs:
         run: |
           $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList @('--smoke-test', ('"' + $env:TEST_URL + '"'), '--output', 'test-downloads/mixcloud', '--report', 'test-downloads/mixcloud.json') -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw 'Mixcloud live download failed; see report artifact.' }
+      - name: Test packaged YouTube audio download
+        if: always() && steps.package.outcome == 'success' && github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          TEST_URL: ${{ inputs.youtube_url || 'https://www.youtube.com/watch?v=jNQXAC9IVRw' }}
+        run: |
+          $originalPath = $env:PATH
+          try {
+            $env:PATH = "$env:SystemRoot\System32"
+            $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList @('--smoke-test', ('"' + $env:TEST_URL + '"'), '--output', 'test-downloads/youtube', '--report', 'test-downloads/youtube.json') -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw 'YouTube live audio download failed; see report artifact.' }
+          } finally {
+            $env:PATH = $originalPath
+          }
       - name: Upload live test reports
         if: always()
         uses: actions/upload-artifact@v4

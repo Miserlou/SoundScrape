@@ -9,6 +9,8 @@ The desktop executable also contains third-party software with its own terms:
 - imageio-ffmpeg: https://github.com/imageio/imageio-ffmpeg/blob/main/LICENSE
 - FFmpeg bundled by imageio-ffmpeg: https://ffmpeg.org/legal.html
 - certifi: https://github.com/certifi/python-certifi/blob/master/LICENSE
+- Node.js (including its third-party notices): https://github.com/nodejs/node/blob/main/LICENSE
+- yt-dlp-ejs: https://github.com/yt-dlp/ejs/blob/main/LICENSE
 - PyInstaller bootloader (GPL with distribution exception): https://pyinstaller.org/en/stable/license.html
 
 FFmpeg build configuration and license information are available by running the

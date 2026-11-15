@@ -1,13 +1,13 @@
 # SoundScrape Desktop — Windows
 
-SoundCloud 또는 Mixcloud 링크를 붙여넣어 오디오를 저장하는 Windows 앱입니다.
+SoundCloud, Mixcloud 또는 YouTube 링크를 붙여넣어 오디오를 저장하는 Windows 앱입니다.
 기존 Python CLI는 아래에 보존되어 있으며, 데스크톱 앱은 별도의 최신 다운로드
 엔진을 사용합니다.
 
 ## 사용하기
 
 1. 이 저장소의 **Releases**에서 `SoundScrape.exe`를 다운로드합니다.
-2. EXE를 실행하고 SoundCloud 트랙 또는 Mixcloud 믹스 링크를 붙여넣습니다.
+2. EXE를 실행하고 SoundCloud 트랙, Mixcloud 믹스 또는 YouTube 영상 링크를 붙여넣습니다.
 3. **다운로드**를 누릅니다. 기본 저장 위치는 `Downloads/SoundScrape`입니다.
 4. 완료 후 **저장 폴더 열기**로 파일을 확인합니다.
 
@@ -17,14 +17,19 @@ SoundCloud 또는 Mixcloud 링크를 붙여넣어 오디오를 저장하는 Wind
 저장 위치를 바꾸면 새로 추가하는 항목부터 적용됩니다. 목록에서 항목을 선택한 뒤
 **저장 폴더 열기**를 누르면 그 항목의 저장 위치가 열립니다.
 
-Python, FFmpeg 설치나 터미널 입력은 필요하지 않습니다. 오디오는 제공되는
+Python, FFmpeg, Node.js 설치나 터미널 입력은 필요하지 않습니다. 오디오는 제공되는
 최상위 음질의 원래 형식으로 저장하며, MP3 변환은 하지 않습니다.
 공개 트랙과 믹스가 우선 검증 대상입니다. 로그인·구독·지역 제한이 있는 링크는
 서버 정책에 따라 실패할 수 있으며 앱에 오류가 표시됩니다.
 
+YouTube는 일반 영상 URL, `youtu.be` 단축 링크, Shorts, Music의 영상 링크를
+지원합니다. 영상은 저장하지 않고 M4A·WebM 등 원본 오디오 형식으로 저장합니다.
+영상 링크에 재생목록이 붙어 있어도 해당 영상 하나만 받습니다. 채널이나 재생목록
+전체 다운로드, MP3 변환은 지원하지 않습니다.
+
 ## 개발 및 Windows 빌드
 
-Python 3.13 64비트와 Tkinter를 사용할 수 있는 Windows에서:
+Python 3.13 64비트와 Tkinter, Node.js 24.22.0을 사용할 수 있는 Windows에서:
 
 ```powershell
 python -m venv .venv
@@ -52,6 +57,7 @@ EXE 파일·창·작업 표시줄 아이콘은 `assets/soundscrape.ico`를 함�
 ```powershell
 .\.venv\Scripts\python.exe -m soundscrape.smoke "https://soundcloud.com/ARTIST/TRACK" --output test-downloads/sc --report test-downloads/sc.json
 .\.venv\Scripts\python.exe -m soundscrape.smoke "https://www.mixcloud.com/ARTIST/MIX/" --output test-downloads/mc --report test-downloads/mc.json
+.\.venv\Scripts\python.exe -m soundscrape.smoke "https://www.youtube.com/watch?v=VIDEO_ID" --output test-downloads/yt --report test-downloads/yt.json
 ```
 
 빌드된 EXE도 `--smoke-test URL --output FOLDER --report FILE`로 같은 검사를
@@ -59,12 +65,12 @@ EXE 파일·창·작업 표시줄 아이콘은 `assets/soundscrape.ico`를 함�
 
 ## GitHub Actions / Release
 
-**Actions → Windows desktop → Run workflow**에서 빌드하고 두 플랫폼의
-**빌드된 EXE** 다운로드 검사를 실행합니다. 기본 공개 테스트 링크를 바꿀 수 있습니다. 테스트 파일 자체는
+**Actions → Windows desktop → Run workflow**에서 빌드하고 세 플랫폼의
+**빌드된 EXE** 다운로드 검사를 실행합니다. 세 플랫폼의 기본 공개 테스트 링크를 바꿀 수 있습니다. 테스트 파일 자체는
 업로드하지 않고 JSON 보고서만 artifact로 남깁니다. 사이트의 일시적인 실패가
 일반 PR 빌드를 막지 않도록 실시간 검사는 수동 실행 및 Release 태그 빌드에서 실행합니다.
 
-`v*` 태그를 push하면 빌드와 두 플랫폼의 다운로드 검사가 성공한 뒤
+`v*` 태그를 push하면 빌드와 세 플랫폼의 다운로드 검사가 성공한 뒤
 Windows x64 EXE와 체크섬이 첨부된 **draft Release**를 만듭니다.
 자동 빌드 결과와 다운로드 검사를 확인한 후 Release를 공개합니다.
 
