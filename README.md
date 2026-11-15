@@ -11,6 +11,12 @@ SoundCloud 또는 Mixcloud 링크를 붙여넣어 오디오를 저장하는 Wind
 3. **다운로드**를 누릅니다. 기본 저장 위치는 `Downloads/SoundScrape`입니다.
 4. 완료 후 **저장 폴더 열기**로 파일을 확인합니다.
 
+여러 링크를 한 줄에 하나씩 입력하고 **다운로드 추가**를 누를 수 있습니다.
+최대 3개가 동시에 다운로드되며 나머지는 대기열에서 순서대로 시작합니다.
+진행 중에도 링크를 계속 추가할 수 있고, 각 항목의 진행률·완료·실패를 따로 확인합니다.
+저장 위치를 바꾸면 새로 추가하는 항목부터 적용됩니다. 목록에서 항목을 선택한 뒤
+**저장 폴더 열기**를 누르면 그 항목의 저장 위치가 열립니다.
+
 Python, FFmpeg 설치나 터미널 입력은 필요하지 않습니다. 오디오는 제공되는
 최상위 음질의 원래 형식으로 저장하며, MP3 변환은 하지 않습니다.
 공개 트랙과 믹스가 우선 검증 대상입니다. 로그인·구독·지역 제한이 있는 링크는
@@ -25,6 +31,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-desktop.txt
 .\.venv\Scripts\python.exe desktop.py
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_desktop.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_multi_download.py -v
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build-windows.ps1
 ```
 
