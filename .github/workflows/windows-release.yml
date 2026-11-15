@@ -1,0 +1,134 @@
+name: Windows desktop
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - 'desktop.py'
+      - 'assets/**'
+      - 'soundscrape/**'
+      - 'tests/test_desktop.py'
+      - 'tests/test_multi_download.py'
+      - 'requirements-desktop.txt'
+      - 'build-windows.ps1'
+      - '.github/workflows/windows-release.yml'
+  workflow_dispatch:
+    inputs:
+      soundcloud_url:
+        description: 'Public SoundCloud track URL for a full download test'
+        type: string
+        default: 'https://soundcloud.com/ethmusic/lostin-powers-she-so-heavy'
+      mixcloud_url:
+        description: 'Public Mixcloud mix URL for a full download test'
+        type: string
+        default: 'https://www.mixcloud.com/dholbach/cryptkeeper/'
+      youtube_url:
+        description: 'Public YouTube video URL for an audio download test'
+        type: string
+        default: 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-desktop.txt
+      - name: Install desktop dependencies
+        run: python -m pip install -r requirements-desktop.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.0'
+      - name: Offline tests
+        run: |
+          python -m unittest discover -s tests -p test_desktop.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p test_multi_download.py -v
+      - name: Build standalone EXE
+        id: package
+        shell: pwsh
+        run: ./build-windows.ps1 -Python python
+      - name: Test packaged SoundCloud download
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          TEST_URL: ${{ inputs.soundcloud_url || 'https://soundcloud.com/ethmusic/lostin-powers-she-so-heavy' }}
+        run: |
+          $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList @('--smoke-test', ('"' + $env:TEST_URL + '"'), '--output', 'test-downloads/soundcloud', '--report', 'test-downloads/soundcloud.json') -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'SoundCloud live download failed; see report artifact.' }
+      - name: Check packaged GUI runtime
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList '--check-runtime' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Packaged GUI runtime failed.' }
+      - name: Test packaged Mixcloud download
+        if: always() && steps.package.outcome == 'success' && github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          TEST_URL: ${{ inputs.mixcloud_url || 'https://www.mixcloud.com/dholbach/cryptkeeper/' }}
+        run: |
+          $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList @('--smoke-test', ('"' + $env:TEST_URL + '"'), '--output', 'test-downloads/mixcloud', '--report', 'test-downloads/mixcloud.json') -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Mixcloud live download failed; see report artifact.' }
+      - name: Test packaged YouTube audio download
+        id: youtube
+        if: always() && steps.package.outcome == 'success' && github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          TEST_URL: ${{ inputs.youtube_url || 'https://www.youtube.com/watch?v=jNQXAC9IVRw' }}
+        run: |
+          $originalPath = $env:PATH
+          try {
+            $env:PATH = "$env:SystemRoot\System32"
+            $process = Start-Process -FilePath ./dist/SoundScrape.exe -ArgumentList @('--smoke-test', ('"' + $env:TEST_URL + '"'), '--output', 'test-downloads/youtube', '--report', 'test-downloads/youtube.json') -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) {
+              $report = Get-Content test-downloads/youtube.json -Raw | ConvertFrom-Json
+              if ($report.error -match 'Sign in to confirm' -and $report.error -match 'not a bot') {
+                'cloud_blocked=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                Write-Output '::warning::YouTube required bot verification on the GitHub runner. Live YouTube validation was skipped; the unsuccessful JSON report is retained.'
+                'YouTube live check: skipped because YouTube required bot verification on this runner. This is not a successful YouTube download test.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+              } else {
+                throw 'YouTube live audio download failed; see report artifact.'
+              }
+            }
+          } finally {
+            $env:PATH = $originalPath
+          }
+      - name: Upload live test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-test-reports
+          path: test-downloads/*.json
+          if-no-files-found: ignore
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoundScrape-Windows-x64
+          path: |
+            dist/SoundScrape.exe
+            dist/SoundScrape.exe.sha256
+            LICENSE
+            THIRD-PARTY-NOTICES.md
+      - name: Create draft GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YOUTUBE_CLOUD_BLOCKED: ${{ steps.youtube.outputs.cloud_blocked }}
+        run: |
+          $notes = @('Windows x64 standalone EXE. SoundCloud, Mixcloud and YouTube audio links; up to 3 concurrent downloads.', '')
+          if ($env:YOUTUBE_CLOUD_BLOCKED -eq 'true') {
+            $notes += 'YouTube validation: the local standalone EXE downloaded and decoded the public test video successfully. The GitHub-hosted runner received a YouTube bot-verification response, so its live YouTube check was skipped. The unsuccessful JSON report is retained in the Actions artifacts.'
+          }
+          $notes | Set-Content release-notes.md -Encoding utf8
+          gh release create $env:GITHUB_REF_NAME dist/SoundScrape.exe dist/SoundScrape.exe.sha256 LICENSE THIRD-PARTY-NOTICES.md --draft --generate-notes --notes-file release-notes.md --title "SoundScrape $env:GITHUB_REF_NAME"

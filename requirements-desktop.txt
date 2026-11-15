@@ -1,0 +1,4 @@
+# The desktop app deliberately does not install the legacy CLI dependencies.
+yt-dlp[default,curl-cffi]==2026.10.26
+imageio-ffmpeg==0.8.1
+pyinstaller==6.22.3
